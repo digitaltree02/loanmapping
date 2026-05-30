@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LoanMapping — Map Your Loan Journey</title>
+<meta name="description" content="Free loan, mortgage, compound interest, budget and debt calculators. No login required. Map your financial journey with LoanMapping."/>
+<meta name="keywords" content="loan calculator, mortgage calculator, compound interest calculator, debt snowball, budget planner, free financial calculator"/>
+<meta name="robots" content="index, follow"/>
+<meta property="og:title" content="LoanMapping — Map Your Loan Journey"/>
+<meta property="og:description" content="Free loan and mortgage calculators. No login required. Instant results."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://www.loanmapping.com"/>
+<link rel="canonical" href="https://www.loanmapping.com"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "LoanMapping",
+  "url": "https://www.loanmapping.com",
+  "description": "Free loan, mortgage and financial calculators",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.loanmapping.com/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.19.0/webfont/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6fa;color:#1a1a2e;min-height:100vh}
+.app{max-width:720px;margin:0 auto;padding:16px}
+input[type=range]{width:100%;accent-color:#1a3a5c;cursor:pointer;height:4px}
+input[type=text],input[type=email],textarea{width:100%;padding:8px 10px;border:1px solid #d0d5e0;border-radius:8px;font-size:14px;background:#fff;color:#1a1a2e;outline:none;transition:border .2s}
+input[type=text]:focus,input[type=email]:focus,textarea:focus{border-color:#1a3a5c}
+button{cursor:pointer;font-family:inherit}
+@media(max-width:540px){.two-col{grid-template-columns:1fr !important}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const SITE = {
+  name:"LoanMapping", tagline:"Map your loan journey",
+  primary:"#1a3a5c", accent:"#00b894", email:"hello@loanmapping.com", year:"2026",
+};
+
+const $$ = n => "$" + Math.round(n).toLocaleString();
+
+/* ══════════════════════════════════════
+   SVG CHARTS
+══════════════════════════════════════ */
+const PieChart = ({ data, colors }) => {
+  const r=68,cx=95,cy=90,W=190,H=180;
+  const total=data.reduce((s,d)=>s+d.value,0);
+  let angle=-Math.PI/2;
+  const slices=data.map((d,i)=>{
+    const sweep=(d.value/total)*Math.PI*2;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    angle+=sweep;
+    const x2=cx+r*Math.cos(angle),y2=cy+r*Math.sin(angle);
+    const mid=angle-sweep/2;
+    const lx=cx+(r+22)*Math.cos(mid),ly=cy+(r+22)*Math.sin(mid);
+    return{d:`M${cx},${cy}L${x1},${y1}A${r},${r},0,${sweep>Math.PI?1:0},1,${x2},${y2}Z`,fill:colors[i%colors.length],label:`${d.name} ${Math.round(d.value/total*100)}%`,lx,ly};
+  });
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="175" style={{display:"block"}}>
+      {slices.map((s,i)=>(
+        <g key={i}>
+          <path d={s.d} fill={s.fill}/>
+          <text x={s.lx} y={s.ly} fontSize="9.5" textAnchor="middle" dominantBaseline="middle" fill="#333" fontWeight="500">{s.label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+const AreaChart = ({ data }) => {
+  const W=300,H=155,pl=50,pr=10,pt=8,pb=28;
+  const iW=W-pl-pr,iH=H-pt-pb,bot=pt+iH;
+  const vals=data.map(d=>d.value),contribs=data.map(d=>d.contrib||0);
+  const maxV=Math.max(...vals,...contribs,1);
+  const sx=i=>pl+(i/(Math.max(data.length-1,1)))*iW;
+  const sy=v=>pt+iH-(Math.max(0,v)/maxV)*iH;
+  const pts=arr=>data.map((_,i)=>`${sx(i).toFixed(1)},${sy(arr[i]).toFixed(1)}`);
+  const line=arr=>`M${pts(arr).join("L")}`;
+  const area=arr=>`${line(arr)}L${sx(data.length-1)},${bot}L${sx(0)},${bot}Z`;
+  const hasC=contribs.some(c=>c>0);
+  const yTicks=[0,.5,1].map(f=>({v:Math.round(maxV*f),y:sy(maxV*f)}));
+  const xIdx=[0,Math.floor((data.length-1)/2),data.length-1];
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="175" style={{display:"block"}}>
+      {yTicks.map((t,i)=><line key={i} x1={pl} y1={t.y} x2={W-pr} y2={t.y} stroke="#e0e4ef" strokeWidth="0.5"/>)}
+      {hasC&&<path d={area(contribs)} fill="#00b89420"/>}
+      <path d={area(vals)} fill="#1a3a5c20"/>
+      {hasC&&<path d={line(contribs)} fill="none" stroke="#00b894" strokeWidth="2"/>}
+      <path d={line(vals)} fill="none" stroke="#1a3a5c" strokeWidth="2"/>
+      {yTicks.map((t,i)=><text key={i} x={pl-5} y={t.y} fontSize="9" textAnchor="end" dominantBaseline="middle" fill="#aaa">{t.v>=1000?`$${Math.round(t.v/1000)}k`:`$${t.v}`}</text>)}
+      {xIdx.map(i=><text key={i} x={sx(i)} y={H-6} fontSize="9" textAnchor="middle" fill="#aaa">{data[i]?.x||""}</text>)}
+    </svg>
+  );
+};
+
+const Chart = ({chart})=>{
+  if(!chart)return null;
+  if(chart.type==="pie")return <PieChart data={chart.data} colors={chart.colors}/>;
+  return <AreaChart data={chart.data}/>;
+};
+
+/* ══════════════════════════════════════
+   CALCULATORS
+══════════════════════════════════════ */
+const CALCULATORS = [
+  {
+    id:"loan",name:"Loan Payoff",icon:"ti-credit-card",
+    desc:"Find out your monthly payment and how much interest you'll pay over the life of any loan.",
+    fields:[
+      {id:"amount",label:"Loan Amount",  pre:"$", min:500,  max:500000,step:500, def:15000},
+      {id:"rate",  label:"Interest Rate",suf:"%", min:0.5,  max:25,    step:0.5, def:6.5},
+      {id:"term",  label:"Term",         suf:" mo",min:6,   max:360,   step:6,   def:48},
+    ],
+    calc:({amount,rate,term})=>{
+      const r=rate/100/12,pmt=r?(amount*r*(1+r)**term)/((1+r)**term-1):amount/term,total=pmt*term,interest=total-amount;
+      return{stats:[{label:"Monthly Payment",value:$$(pmt),hi:true},{label:"Total Cost",value:$$(total)},{label:"Total Interest",value:$$(interest)}],
+        chart:{type:"pie",data:[{name:"Principal",value:Math.round(+amount)},{name:"Interest",value:Math.round(interest)}],colors:[SITE.primary,SITE.accent]}};
+    },
+  },
+  {
+    id:"compound",name:"Compound Interest",icon:"ti-trending-up",
+    desc:"See how your savings snowball over time — the earlier you start, the more you earn.",
+    fields:[
+      {id:"principal",label:"Initial Deposit", pre:"$",min:100,max:100000,step:100,def:5000},
+      {id:"rate",     label:"Annual Rate",      suf:"%",min:1,  max:20,   step:0.5,def:7},
+      {id:"years",    label:"Years",            suf:" yr",min:1,max:40,   step:1,  def:10},
+      {id:"monthly",  label:"Monthly Addition", pre:"$",min:0,  max:5000, step:50, def:200},
+    ],
+    calc:({principal,rate,years,monthly})=>{
+      const r=rate/100/12,fv=n=>principal*(1+r)**n+(r?monthly*((1+r)**n-1)/r:monthly*n);
+      const future=fv(years*12),contrib=principal+monthly*years*12;
+      return{stats:[{label:"Future Value",value:$$(future),hi:true},{label:"Total Contributed",value:$$(contrib)},{label:"Interest Earned",value:$$(future-contrib)}],
+        chart:{type:"area",data:Array.from({length:years+1},(_,i)=>({x:`Y${i}`,value:Math.round(fv(i*12)),contrib:Math.round(principal+monthly*i*12)}))}};
+    },
+  },
+  {
+    id:"mortgage",name:"Mortgage",icon:"ti-home",
+    desc:"Calculate your monthly mortgage payment and see the full cost of buying a home.",
+    fields:[
+      {id:"price",label:"Home Price",   pre:"$",min:50000,max:2000000,step:5000,def:400000},
+      {id:"down", label:"Down Payment", suf:"%",min:3,    max:50,     step:1,   def:20},
+      {id:"rate", label:"Interest Rate",suf:"%",min:1,    max:15,     step:0.1, def:6.8},
+      {id:"years",label:"Term",         suf:" yr",min:5,  max:30,     step:5,   def:30},
+    ],
+    calc:({price,down,rate,years})=>{
+      const p=price*(1-down/100),r=rate/100/12,n=years*12,pmt=r?(p*r*(1+r)**n)/((1+r)**n-1):p/n,total=pmt*n;
+      return{stats:[{label:"Monthly Payment",value:$$(pmt),hi:true},{label:"Loan Amount",value:$$(p)},{label:"Total Interest",value:$$(total-p)}],
+        chart:{type:"pie",data:[{name:"Principal",value:Math.round(p)},{name:"Interest",value:Math.round(total-p)}],colors:[SITE.primary,SITE.accent]}};
+    },
+  },
+  {
+    id:"budget",name:"Budget Planner",icon:"ti-wallet",
+    desc:"Split your income using the 50/30/20 rule — needs, wants, and savings made simple.",
+    fields:[{id:"income",label:"Monthly Income",pre:"$",min:1000,max:50000,step:250,def:5000}],
+    calc:({income})=>({
+      stats:[{label:"Needs (50%)",value:$$(income*.5),hi:true},{label:"Wants (30%)",value:$$(income*.3)},{label:"Savings (20%)",value:$$(income*.2)}],
+      chart:{type:"pie",data:[{name:"Needs",value:Math.round(income*.5)},{name:"Wants",value:Math.round(income*.3)},{name:"Savings",value:Math.round(income*.2)}],colors:[SITE.primary,SITE.accent,"#e17055"]},
+    }),
+  },
+  {
+    id:"debt",name:"Debt Snowball",icon:"ti-coin",
+    desc:"Pay off multiple debts faster by rolling payments — see exactly when you'll be debt-free.",
+    fields:[
+      {id:"debt1",  label:"Debt 1 Balance",pre:"$",min:0,  max:50000,step:100,def:5000},
+      {id:"debt2",  label:"Debt 2 Balance",pre:"$",min:0,  max:50000,step:100,def:8000},
+      {id:"payment",label:"Monthly Budget",pre:"$",min:100,max:10000,step:50, def:600},
+      {id:"rate",   label:"Avg Rate",      suf:"%",min:1,  max:30,   step:0.5,def:18},
+    ],
+    calc:({debt1,debt2,payment,rate})=>{
+      const total=+debt1+ +debt2,r=rate/100/12,pmt=Math.max(payment,total*r*1.02);
+      const months=r?Math.min(360,Math.ceil(-Math.log(1-(r*total)/pmt)/Math.log(1+r))):Math.ceil(total/payment);
+      const totalPaid=pmt*months;
+      return{stats:[{label:"Debt-Free In",value:`${months} mo`,hi:true},{label:"Total Paid",value:$$(totalPaid)},{label:"Interest",value:$$(totalPaid-total)}],
+        chart:{type:"area",data:Array.from({length:Math.min(months,60)+1},(_,i)=>{const n=i*Math.ceil(months/Math.min(months,60));const rem=r?Math.max(0,total*(1+r)**n-pmt*((1+r)**n-1)/r):Math.max(0,total-pmt*n);return{x:`M${n}`,value:Math.round(rem)};})},
+      };
+    },
+  },
+];
+
+/* ══════════════════════════════════════
+   SHARED COMPONENTS
+══════════════════════════════════════ */
+const AdBox = () => (
+  <div style={{border:"1px dashed #c0c8d8",borderRadius:8,padding:"8px 16px",fontSize:11,color:"#aaa",textAlign:"center",marginBottom:14}}>
+    <i className="ti ti-ad" style={{fontSize:13,marginRight:4}}/> Advertisement · Google AdSense
+  </div>
+);
+
+const SliderField = ({f,value,onChange}) => {
+  const [draft,setDraft]=useState(null);
+  const display=draft!==null?draft:value;
+  const commit=raw=>{setDraft(null);const n=parseFloat(String(raw).replace(/,/g,""));if(!isNaN(n))onChange(f.id,Math.min(f.max,Math.max(f.min,n)));};
+  return(
+    <div style={{marginBottom:18}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+        <label style={{fontSize:13,color:"#555",fontWeight:500}}>{f.label}</label>
+        <div style={{display:"flex",alignItems:"center",gap:3,border:"1px solid #d0d5e0",borderRadius:8,padding:"3px 8px",background:"#fff"}}>
+          {f.pre&&<span style={{fontSize:13,color:"#bbb"}}>{f.pre}</span>}
+          <input type="text" inputMode="decimal" value={display}
+            onChange={e=>setDraft(e.target.value)}
+            onBlur={e=>commit(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&commit(e.target.value)}
+            style={{width:72,fontSize:14,fontWeight:500,textAlign:"right",border:"none",outline:"none",background:"transparent",color:"#1a1a2e",padding:0}}/>
+          {f.suf&&<span style={{fontSize:13,color:"#bbb"}}>{f.suf}</span>}
+        </div>
+      </div>
+      <input type="range" min={f.min} max={f.max} step={f.step} value={value} onChange={e=>{setDraft(null);onChange(f.id,+e.target.value);}}/>
+      <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
+        <span style={{fontSize:11,color:"#ccc"}}>{f.pre||""}{f.min.toLocaleString()}{f.suf||""}</span>
+        <span style={{fontSize:11,color:"#ccc"}}>{f.pre||""}{f.max.toLocaleString()}{f.suf||""}</span>
+      </div>
+    </div>
+  );
+};
+
+const StatRow = ({label,value,hi}) => (
+  <div style={{background:hi?SITE.primary:"#f0f2f8",border:hi?"none":"1px solid #e0e4ef",borderRadius:8,padding:"11px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+    <span style={{fontSize:12,fontWeight:500,color:hi?"rgba(255,255,255,0.75)":"#666"}}>{label}</span>
+    <span style={{fontSize:17,fontWeight:500,color:hi?"#fff":"#1a1a2e"}}>{value}</span>
+  </div>
+);
+
+/* ══════════════════════════════════════
+   PAGES
+══════════════════════════════════════ */
+const HomePage = () => {
+  const STEPS=[{icon:"ti-hand-click",text:"Pick a calculator"},{icon:"ti-adjustments",text:"Slide or type values"},{icon:"ti-chart-bar",text:"See instant results"}];
+  const [tipOpen,setTipOpen]=useState(true);
+  const getDefaults=c=>Object.fromEntries(c.fields.map(f=>[f.id,f.def]));
+  const [activeId,setActiveId]=useState(CALCULATORS[0].id);
+  const [values,setValues]=useState(()=>getDefaults(CALCULATORS[0]));
+  const calc=CALCULATORS.find(c=>c.id===activeId);
+  const switchCalc=id=>{setActiveId(id);setValues(getDefaults(CALCULATORS.find(c=>c.id===id)));};
+  const onChange=(id,val)=>setValues(p=>({...p,[id]:val}));
+  const result=useMemo(()=>{try{return calc.calc(values);}catch{return null;}},[values,activeId]);
+  return(
+    <div>
+      <AdBox/>
+      {tipOpen?(
+        <div style={{background:"#eef2fb",border:"1px solid #d0d8f0",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <span style={{fontSize:13,fontWeight:500}}><i className="ti ti-info-circle" style={{marginRight:6,color:SITE.primary}}/>How to use LoanMapping</span>
+            <button onClick={()=>setTipOpen(false)} style={{background:"none",border:"none",fontSize:20,color:"#aaa",lineHeight:1,padding:0}}>×</button>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            {STEPS.map((s,i)=>(
+              <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",gap:6}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:SITE.primary,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <i className={`ti ${s.icon}`} style={{color:"#fff",fontSize:17}}/>
+                </div>
+                <span style={{fontSize:12,color:"#555",lineHeight:1.4}}>{s.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ):(
+        <button onClick={()=>setTipOpen(true)} style={{fontSize:12,color:"#aaa",background:"none",border:"1px solid #e0e4ef",borderRadius:8,padding:"4px 10px",marginBottom:14}}>
+          <i className="ti ti-info-circle" style={{marginRight:4}}/>How to use
+        </button>
+      )}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+        {CALCULATORS.map(c=>(
+          <div key={c.id} style={{position:"relative"}}
+            onMouseEnter={e=>{const t=e.currentTarget.querySelector(".tip");if(t)t.style.display="block";}}
+            onMouseLeave={e=>{const t=e.currentTarget.querySelector(".tip");if(t)t.style.display="none";}}>
+            <button onClick={()=>switchCalc(c.id)} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:activeId===c.id?`2px solid ${SITE.primary}`:"1px solid #d0d5e0",background:activeId===c.id?SITE.primary:"#fff",color:activeId===c.id?"#fff":"#555",fontSize:13,fontWeight:500}}>
+              <i className={`ti ${c.icon}`} style={{fontSize:14}}/>{c.name}
+            </button>
+            <div className="tip" style={{display:"none",position:"absolute",top:"calc(100% + 8px)",left:0,zIndex:999,background:"#1a2a3a",border:"1px solid #2e4a6a",borderRadius:8,padding:"9px 13px",fontSize:12,color:"#e2eaf2",width:210,lineHeight:1.6,boxShadow:"0 6px 20px rgba(0,0,0,0.3)",pointerEvents:"none"}}>{c.desc}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{fontSize:13,color:"#555",marginBottom:16,padding:"8px 12px",background:"#eef2fb",borderRadius:8,borderLeft:`3px solid ${SITE.primary}`}}>
+        <i className="ti ti-bulb" style={{marginRight:6,color:SITE.primary}}/>{calc.desc}
+      </div>
+      <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+        <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"18px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,fontSize:15,fontWeight:500,marginBottom:20}}>
+            <i className={`ti ${calc.icon}`} style={{color:SITE.primary,fontSize:18}}/>{calc.name}
+          </div>
+          {calc.fields.map(f=><SliderField key={f.id} f={f} value={values[f.id]} onChange={onChange}/>)}
+        </div>
+        <div>
+          {result?.stats.map((s,i)=><StatRow key={i} {...s}/>)}
+          {result?.chart&&(
+            <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"14px",marginTop:4}}>
+              <Chart chart={result.chart}/>
+            </div>
+          )}
+          <div style={{marginTop:10}}><AdBox/></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AboutPage = () => (
+  <div style={{maxWidth:560}}>
+    <h2 style={{fontSize:20,fontWeight:500,marginBottom:16}}>About LoanMapping</h2>
+    <div style={{background:"#eef2fb",borderRadius:12,padding:"18px",marginBottom:16,borderLeft:`3px solid ${SITE.primary}`}}>
+      <p style={{fontSize:14,color:"#444",lineHeight:1.8}}>LoanMapping is a free financial calculator suite designed to help everyday people understand their loans, savings, and budgets — without needing a finance degree. No accounts, no data collection, no subscriptions. Just clear, instant answers.</p>
+    </div>
+    {[{icon:"ti-lock",title:"Your privacy first",desc:"We don't store any data you enter. All calculations happen in your browser. Nothing is sent to any server."},{icon:"ti-calculator",title:"Always free",desc:"Every calculator on LoanMapping is completely free to use. No premium tiers, no paywalls on core tools."},{icon:"ti-device-mobile",title:"Works everywhere",desc:"LoanMapping works on any device — phone, tablet, or desktop. Install it to your home screen for quick access."}].map((item,i)=>(
+      <div key={i} style={{display:"flex",gap:14,marginBottom:14,padding:"16px",background:"#fff",border:"1px solid #e0e4ef",borderRadius:12}}>
+        <div style={{width:38,height:38,borderRadius:"50%",background:SITE.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <i className={`ti ${item.icon}`} style={{color:"#fff",fontSize:18}}/>
+        </div>
+        <div>
+          <div style={{fontSize:14,fontWeight:500,marginBottom:4}}>{item.title}</div>
+          <div style={{fontSize:13,color:"#555",lineHeight:1.6}}>{item.desc}</div>
+        </div>
+      </div>
+    ))}
+    <p style={{fontSize:12,color:"#aaa",lineHeight:1.6,marginTop:8}}>LoanMapping provides calculators for informational purposes only. Results are estimates and should not be considered financial advice. Always consult a qualified financial advisor before making financial decisions.</p>
+  </div>
+);
+
+const PrivacyPage = () => (
+  <div style={{maxWidth:560}}>
+    <h2 style={{fontSize:20,fontWeight:500,marginBottom:4}}>Privacy Policy</h2>
+    <p style={{fontSize:12,color:"#aaa",marginBottom:20}}>Last updated: January 1, {SITE.year}</p>
+    {[
+      {title:"1. Information we collect",body:"LoanMapping does not collect, store, or transmit any personal data. All calculator inputs are processed entirely within your browser and are never sent to our servers."},
+      {title:"2. Cookies",body:"We use Google AdSense to display advertisements. Google may use cookies to serve ads based on your visits to this and other websites. You can opt out via Google's Ad Settings."},
+      {title:"3. Analytics",body:"We may use Google Analytics to understand how visitors use our site. This data is anonymized and aggregated. It does not identify you personally."},
+      {title:"4. Third-party links",body:"Our site may contain links to third-party websites. We are not responsible for their privacy practices."},
+      {title:"5. Children's privacy",body:"LoanMapping is not directed at children under 13. We do not knowingly collect information from children."},
+      {title:"6. Changes to this policy",body:"We may update this Privacy Policy from time to time by posting the new policy on this page."},
+      {title:"7. Contact us",body:`Questions? Email us at ${SITE.email}`},
+    ].map((s,i)=>(
+      <div key={i} style={{marginBottom:18}}>
+        <div style={{fontSize:14,fontWeight:500,marginBottom:5}}>{s.title}</div>
+        <p style={{fontSize:13,color:"#555",lineHeight:1.7}}>{s.body}</p>
+      </div>
+    ))}
+  </div>
+);
+
+const ContactPage = () => {
+  const [status,setStatus]=useState("idle");
+  const [form,setForm]=useState({name:"",email:"",message:""});
+  const ok=form.name&&form.email&&form.message;
+
+  const handleSubmit=async()=>{
+    if(!ok)return;
+    setStatus("sending");
+    try{
+      const res=await fetch("https://api.web3forms.com/submit",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          access_key:"bf64248e-5198-4b4f-b937-807f5746615d",
+          name:form.name,
+          email:form.email,
+          message:form.message,
+          subject:`New message from ${form.name} via LoanMapping`,
+        }),
+      });
+      const data=await res.json();
+      setStatus(data.success?"success":"error");
+    }catch{
+      setStatus("error");
+    }
+  };
+
+  return(
+    <div style={{maxWidth:480}}>
+      <h2 style={{fontSize:20,fontWeight:500,marginBottom:6}}>Contact Us</h2>
+      <p style={{fontSize:13,color:"#555",marginBottom:20,lineHeight:1.6}}>Have a question, suggestion, or found a bug? We'd love to hear from you.</p>
+      {status==="success"?(
+        <div style={{background:"#eef9f5",border:`1px solid ${SITE.accent}`,borderRadius:12,padding:"24px",textAlign:"center"}}>
+          <i className="ti ti-circle-check" style={{fontSize:40,color:SITE.accent,display:"block",marginBottom:10}}/>
+          <div style={{fontSize:15,fontWeight:500,marginBottom:6}}>Message sent!</div>
+          <div style={{fontSize:13,color:"#555"}}>We'll get back to you at {form.email}</div>
+          <button onClick={()=>{setStatus("idle");setForm({name:"",email:"",message:""}); }} style={{marginTop:14,background:"none",border:"1px solid #d0d5e0",borderRadius:8,padding:"6px 14px",fontSize:13,color:"#555"}}>
+            Send another
+          </button>
+        </div>
+      ):(
+        <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"20px",display:"flex",flexDirection:"column",gap:14}}>
+          {[{id:"name",label:"Your name",type:"text",ph:"Jane Smith"},{id:"email",label:"Email address",type:"email",ph:"jane@example.com"}].map(f=>(
+            <div key={f.id}>
+              <label style={{display:"block",fontSize:13,fontWeight:500,marginBottom:5,color:"#555"}}>{f.label}</label>
+              <input type={f.type} placeholder={f.ph} value={form[f.id]} onChange={e=>setForm(p=>({...p,[f.id]:e.target.value}))} disabled={status==="sending"}/>
+            </div>
+          ))}
+          <div>
+            <label style={{display:"block",fontSize:13,fontWeight:500,marginBottom:5,color:"#555"}}>Message</label>
+            <textarea placeholder="Your message..." rows={4} value={form.message} onChange={e=>setForm(p=>({...p,message:e.target.value}))} disabled={status==="sending"} style={{resize:"vertical",fontFamily:"inherit"}}/>
+          </div>
+          {status==="error"&&(
+            <div style={{background:"#fff0f0",border:"1px solid #ffcccc",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#cc0000"}}>
+              <i className="ti ti-alert-circle" style={{marginRight:6}}/>Something went wrong. Please try again.
+            </div>
+          )}
+          <button onClick={handleSubmit} disabled={!ok||status==="sending"}
+            style={{background:ok&&status!=="sending"?SITE.primary:"#ccc",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,fontWeight:500,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            {status==="sending"?<><i className="ti ti-loader-2" style={{animation:"spin 1s linear infinite"}}/>Sending...</>:<>Send message <i className="ti ti-send"/></>}
+          </button>
+        </div>
+      )}
+
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════ */
+const NAV=[{id:"about",label:"About",icon:"ti-info-circle"},{id:"privacy",label:"Privacy",icon:"ti-lock"},{id:"contact",label:"Contact",icon:"ti-mail"}];
+
+function App(){
+  const [page,setPage]=useState("home");
+  return(
+    <div className="app">
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid #e0e4ef",marginBottom:16,flexWrap:"wrap",gap:8}}>
+        <button onClick={()=>setPage("home")} style={{display:"flex",alignItems:"baseline",gap:8,background:"none",border:"none",padding:0}}>
+          <span style={{fontSize:20,fontWeight:600,color:SITE.primary}}><i className="ti ti-map-2" style={{marginRight:6,fontSize:18,verticalAlign:"-2px"}}/>{SITE.name}</span>
+          <span style={{fontSize:12,color:"#bbb"}}>{SITE.tagline}</span>
+        </button>
+        <nav style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+          {NAV.map(p=>(
+            <button key={p.id} onClick={()=>setPage(p.id)} style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:8,border:page===p.id?`1.5px solid ${SITE.primary}`:"1px solid #e0e4ef",background:page===p.id?"#eef2fb":"transparent",color:page===p.id?"#1a1a2e":"#888",fontSize:12,fontWeight:500}}>
+              <i className={`ti ${p.icon}`} style={{fontSize:13}}/>{p.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+      {page==="home"    && <HomePage/>}
+      {page==="about"   && <AboutPage/>}
+      {page==="privacy" && <PrivacyPage/>}
+      {page==="contact" && <ContactPage/>}
+      <div style={{marginTop:28,paddingTop:14,borderTop:"1px solid #e0e4ef",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+        <span style={{fontSize:11,color:"#bbb"}}>© {SITE.year} LoanMapping · For informational purposes only · Not financial advice</span>
+        <div style={{display:"flex",gap:12}}>
+          {NAV.map(p=><button key={p.id} onClick={()=>setPage(p.id)} style={{fontSize:11,color:"#bbb",background:"none",border:"none",padding:0,cursor:"pointer"}}>{p.label}</button>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
