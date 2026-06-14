@@ -1,0 +1,18 @@
+{
+  "name": "loanmapping",
+  "version": "1.0.0",
+  "description": "Free financial calculators - loan, mortgage, compound interest, budget and debt snowball calculators",
+  "author": "LoanMapping",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

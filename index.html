@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18050335116"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-18050335116');
+</script>
+<!-- Google AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7675700377525171" crossorigin="anonymous"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Free Loan & Mortgage Calculator | LoanMapping</title>
+<meta name="description" content="Free loan, mortgage, compound interest, auto loan, personal loan, amortization schedule, debt payoff and budget calculators. No login required. Instant results at LoanMapping."/>
+<meta name="keywords" content="loan calculator, mortgage calculator, compound interest calculator, debt snowball, budget planner, free financial calculator, auto loan calculator, personal loan calculator, amortization schedule, debt payoff calculator, 50 30 20 budget rule, monthly payment calculator"/>
+<meta name="robots" content="index, follow"/>
+<meta property="og:title" content="Free Loan & Mortgage Calculator | LoanMapping"/>
+<meta property="og:description" content="Free loan, mortgage, compound interest and budget calculators. No login required. Instant results."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://www.loanmapping.com"/>
+<meta property="og:image" content="https://www.loanmapping.com/og-image.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Free Loan & Mortgage Calculator | LoanMapping"/>
+<meta name="twitter:description" content="Free loan, mortgage, compound interest and budget calculators. No login required. Instant results."/>
+<meta name="twitter:image" content="https://www.loanmapping.com/og-image.png"/>
+<link rel="canonical" href="https://www.loanmapping.com"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "LoanMapping",
+  "url": "https://www.loanmapping.com",
+  "description": "Free loan, mortgage and financial calculators",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.loanmapping.com/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6fa;color:#1a1a2e;min-height:100vh}
+.app{max-width:760px;margin:0 auto;padding:16px}
+input[type=range]{width:100%;accent-color:#1a3a5c;cursor:pointer;height:4px}
+input[type=text],input[type=email],textarea{width:100%;padding:8px 10px;border:1px solid #d0d5e0;border-radius:8px;font-size:14px;background:#fff;color:#1a1a2e;outline:none;transition:border .2s}
+input[type=text]:focus,input[type=email]:focus,textarea:focus{border-color:#1a3a5c}
+button{cursor:pointer;font-family:inherit}
+/* Scrollable tabs — no wrapping on mobile */
+.calc-tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none;flex-wrap:nowrap}
+.calc-tabs::-webkit-scrollbar{display:none}
+/* Amortization table */
+.amort-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-height:340px;overflow-y:auto;border-radius:8px;border:1px solid #e0e4ef}
+.amort-table{width:100%;border-collapse:collapse;font-size:12px;min-width:380px}
+.amort-table th{background:#f0f2f8;padding:7px 10px;text-align:right;font-weight:600;color:#555;border-bottom:2px solid #e0e4ef;position:sticky;top:0;z-index:1}
+.amort-table th:first-child{text-align:left}
+.amort-table td{padding:5px 10px;text-align:right;border-bottom:1px solid #f0f2f8;color:#444}
+.amort-table td:first-child{text-align:left;font-weight:500;color:#1a1a2e}
+.amort-table tr:hover td{background:#f5f7ff}
+.amort-table tr.year-row td{background:#eef2fb;font-weight:600;color:#1a3a5c}
+/* Compare grid */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* Mobile */
+@media(max-width:640px){
+  .two-col{grid-template-columns:1fr !important}
+  .compare-grid{grid-template-columns:1fr !important}
+  .app{padding:10px}
+  .logo-tagline{display:none}
+  .nav-label{display:none}
+  .calc-desc-row{flex-direction:column !important;align-items:stretch !important}
+  .calc-desc-row>div:last-child{display:flex;justify-content:flex-start}
+}
+/* Print */
+@media print{
+  .no-print{display:none !important}
+  body{background:#fff}
+  .app{max-width:100%;padding:0 8px}
+  .print-show{display:block !important}
+  .two-col{grid-template-columns:1fr 1fr !important}
+  .amort-wrap{max-height:none;overflow:visible;border:1px solid #ccc}
+  button{display:none !important}
+  .stat-hi{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const SITE = {
+  name:"LoanMapping", tagline:"Map your loan journey",
+  primary:"#1a3a5c", accent:"#00b894", email:"hello@loanmapping.com", year:"2026",
+};
+
+class ErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={hasError:false};}
+  static getDerivedStateFromError(){return{hasError:true};}
+  componentDidCatch(e){console.error('App error:',e);}
+  render(){
+    if(this.state.hasError)return(
+      <div style={{background:"#fff0f0",border:"1px solid #ffcccc",borderRadius:12,padding:"20px",textAlign:"center"}}>
+        <i className="ti ti-alert-circle" style={{fontSize:32,color:"#cc0000",marginBottom:10,display:"block"}}/>
+        <div style={{fontSize:15,fontWeight:500,marginBottom:6,color:"#cc0000"}}>Something went wrong</div>
+        <div style={{fontSize:13,color:"#555",marginBottom:14}}>Please refresh the page to continue.</div>
+        <button onClick={()=>window.location.reload()} style={{background:"#1a3a5c",color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:13,cursor:"pointer"}}>Refresh page</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
+/* ══════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════ */
+const $$ = n => "$" + Math.round(n).toLocaleString();
+const $$2 = n => "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+
+const downloadCSV = (filename, rows) => {
+  const content = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([content], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+};
+
+const buildAmort = (principal, annualRate, months) => {
+  const r = annualRate / 100 / 12;
+  const pmt = r ? (principal * r * (1+r)**months) / ((1+r)**months - 1) : principal / months;
+  let balance = +principal;
+  return Array.from({length: months}, (_, i) => {
+    const interest = balance * r;
+    const princ = Math.min(pmt - interest, balance);
+    balance = Math.max(0, balance - princ);
+    return {month: i+1, payment: pmt, principal: princ, interest, balance};
+  });
+};
+
+/* group monthly rows into annual summaries */
+const groupAmortByYear = rows => {
+  const years = {};
+  rows.forEach(r => {
+    const y = Math.ceil(r.month / 12);
+    if (!years[y]) years[y] = {year:y, payment:0, principal:0, interest:0, balance:0};
+    years[y].payment += r.payment;
+    years[y].principal += r.principal;
+    years[y].interest += r.interest;
+    years[y].balance = r.balance;
+  });
+  return Object.values(years);
+};
+
+/* ══════════════════════════════════════
+   SVG CHARTS
+══════════════════════════════════════ */
+const PieChart = ({data,colors}) => {
+  const r=68,cx=95,cy=90,W=190,H=180;
+  const total=data.reduce((s,d)=>s+d.value,0);
+  let angle=-Math.PI/2;
+  const slices=data.map((d,i)=>{
+    const sweep=(d.value/total)*Math.PI*2;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    angle+=sweep;
+    const x2=cx+r*Math.cos(angle),y2=cy+r*Math.sin(angle);
+    const mid=angle-sweep/2;
+    const lx=cx+(r+22)*Math.cos(mid),ly=cy+(r+22)*Math.sin(mid);
+    return{d:`M${cx},${cy}L${x1},${y1}A${r},${r},0,${sweep>Math.PI?1:0},1,${x2},${y2}Z`,fill:colors[i%colors.length],label:`${d.name} ${Math.round(d.value/total*100)}%`,lx,ly};
+  });
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="175" style={{display:"block"}}>
+      {slices.map((s,i)=>(
+        <g key={i}>
+          <path d={s.d} fill={s.fill}/>
+          <text x={s.lx} y={s.ly} fontSize="9.5" textAnchor="middle" dominantBaseline="middle" fill="#333" fontWeight="500">{s.label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+const AreaChart = ({data}) => {
+  const W=300,H=155,pl=50,pr=10,pt=8,pb=28;
+  const iW=W-pl-pr,iH=H-pt-pb,bot=pt+iH;
+  const vals=data.map(d=>d.value),contribs=data.map(d=>d.contrib||0);
+  const maxV=Math.max(...vals,...contribs,1);
+  const sx=i=>pl+(i/(Math.max(data.length-1,1)))*iW;
+  const sy=v=>pt+iH-(Math.max(0,v)/maxV)*iH;
+  const pts=arr=>data.map((_,i)=>`${sx(i).toFixed(1)},${sy(arr[i]).toFixed(1)}`);
+  const line=arr=>`M${pts(arr).join("L")}`;
+  const area=arr=>`${line(arr)}L${sx(data.length-1)},${bot}L${sx(0)},${bot}Z`;
+  const hasC=contribs.some(c=>c>0);
+  const yTicks=[0,.5,1].map(f=>({v:Math.round(maxV*f),y:sy(maxV*f)}));
+  const xIdx=[0,Math.floor((data.length-1)/2),data.length-1];
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="175" style={{display:"block"}}>
+      {yTicks.map((t,i)=><line key={i} x1={pl} y1={t.y} x2={W-pr} y2={t.y} stroke="#e0e4ef" strokeWidth="0.5"/>)}
+      {hasC&&<path d={area(contribs)} fill="#00b89420"/>}
+      <path d={area(vals)} fill="#1a3a5c20"/>
+      {hasC&&<path d={line(contribs)} fill="none" stroke="#00b894" strokeWidth="2"/>}
+      <path d={line(vals)} fill="none" stroke="#1a3a5c" strokeWidth="2"/>
+      {yTicks.map((t,i)=><text key={i} x={pl-5} y={t.y} fontSize="9" textAnchor="end" dominantBaseline="middle" fill="#aaa">{t.v>=1000?`$${Math.round(t.v/1000)}k`:`$${t.v}`}</text>)}
+      {xIdx.map(i=><text key={i} x={sx(i)} y={H-6} fontSize="9" textAnchor="middle" fill="#aaa">{data[i]?.x||""}</text>)}
+    </svg>
+  );
+};
+
+const Chart = ({chart}) => {
+  try{
+    if(!chart)return null;
+    if(chart.type==="pie")return <PieChart data={chart.data} colors={chart.colors}/>;
+    return <AreaChart data={chart.data}/>;
+  }catch(e){
+    console.error("Chart error:",e);
+    return <div style={{color:"#cc0000",fontSize:13,padding:"10px"}}>Chart unavailable</div>;
+  }
+};
+
+/* ══════════════════════════════════════
+   CALCULATORS
+══════════════════════════════════════ */
+const CALCULATORS = [
+  {
+    id:"loan", name:"Loan Payoff", icon:"ti-credit-card", hasAmort:true,
+    desc:"Find out your monthly payment and how much interest you'll pay over the life of any loan.",
+    fields:[
+      {id:"amount",label:"Loan Amount",  pre:"$", min:500,  max:500000,step:500, def:15000},
+      {id:"rate",  label:"Interest Rate",suf:"%", min:0.5,  max:25,    step:0.5, def:6.5},
+      {id:"term",  label:"Term",         suf:" mo",min:6,   max:360,   step:6,   def:48},
+    ],
+    calc:({amount,rate,term})=>{
+      const r=rate/100/12,pmt=r?(amount*r*(1+r)**term)/((1+r)**term-1):amount/term,total=pmt*term,interest=total-amount;
+      return{
+        stats:[{label:"Monthly Payment",value:$$(pmt),hi:true},{label:"Total Cost",value:$$(total)},{label:"Total Interest",value:$$(interest)}],
+        chart:{type:"pie",data:[{name:"Principal",value:Math.round(+amount)},{name:"Interest",value:Math.round(interest)}],colors:[SITE.primary,SITE.accent]},
+        amortParams:{principal:+amount,rate:+rate,months:+term},
+      };
+    },
+  },
+  {
+    id:"compound", name:"Compound Interest", icon:"ti-trending-up",
+    desc:"See how your savings snowball over time — the earlier you start, the more you earn.",
+    fields:[
+      {id:"principal",label:"Initial Deposit", pre:"$",min:100,max:100000,step:100,def:5000},
+      {id:"rate",     label:"Annual Rate",      suf:"%",min:1,  max:20,   step:0.5,def:7},
+      {id:"years",    label:"Years",            suf:" yr",min:1,max:40,   step:1,  def:10},
+      {id:"monthly",  label:"Monthly Addition", pre:"$",min:0,  max:5000, step:50, def:200},
+    ],
+    calc:({principal,rate,years,monthly})=>{
+      const r=rate/100/12,fv=n=>principal*(1+r)**n+(r?monthly*((1+r)**n-1)/r:monthly*n);
+      const future=fv(years*12),contrib=principal+monthly*years*12;
+      return{
+        stats:[{label:"Future Value",value:$$(future),hi:true},{label:"Total Contributed",value:$$(contrib)},{label:"Interest Earned",value:$$(future-contrib)}],
+        chart:{type:"area",data:Array.from({length:years+1},(_,i)=>({x:`Y${i}`,value:Math.round(fv(i*12)),contrib:Math.round(principal+monthly*i*12)}))},
+      };
+    },
+  },
+  {
+    id:"mortgage", name:"Mortgage", icon:"ti-home", hasAmort:true,
+    desc:"Calculate your monthly mortgage payment and see the full cost of buying a home.",
+    fields:[
+      {id:"price",label:"Home Price",   pre:"$",min:50000,max:2000000,step:5000,def:400000},
+      {id:"down", label:"Down Payment", suf:"%",min:3,    max:50,     step:1,   def:20},
+      {id:"rate", label:"Interest Rate",suf:"%",min:1,    max:15,     step:0.1, def:6.8},
+      {id:"years",label:"Term",         suf:" yr",min:5,  max:30,     step:5,   def:30},
+    ],
+    calc:({price,down,rate,years})=>{
+      const p=price*(1-down/100),r=rate/100/12,n=years*12,pmt=r?(p*r*(1+r)**n)/((1+r)**n-1):p/n,total=pmt*n;
+      return{
+        stats:[{label:"Monthly Payment",value:$$(pmt),hi:true},{label:"Loan Amount",value:$$(p)},{label:"Total Interest",value:$$(total-p)}],
+        chart:{type:"pie",data:[{name:"Principal",value:Math.round(p)},{name:"Interest",value:Math.round(total-p)}],colors:[SITE.primary,SITE.accent]},
+        amortParams:{principal:p,rate:+rate,months:years*12},
+      };
+    },
+  },
+  {
+    id:"budget", name:"Budget Planner", icon:"ti-wallet",
+    desc:"Split your income using the 50/30/20 rule — needs, wants, and savings made simple.",
+    fields:[{id:"income",label:"Monthly Income",pre:"$",min:1000,max:50000,step:250,def:5000}],
+    calc:({income})=>({
+      stats:[{label:"Needs (50%)",value:$$(income*.5),hi:true},{label:"Wants (30%)",value:$$(income*.3)},{label:"Savings (20%)",value:$$(income*.2)}],
+      chart:{type:"pie",data:[{name:"Needs",value:Math.round(income*.5)},{name:"Wants",value:Math.round(income*.3)},{name:"Savings",value:Math.round(income*.2)}],colors:[SITE.primary,SITE.accent,"#e17055"]},
+    }),
+  },
+  {
+    id:"debt", name:"Debt Snowball", icon:"ti-coin",
+    desc:"Pay off multiple debts faster by rolling payments — see exactly when you'll be debt-free.",
+    fields:[
+      {id:"debt1",  label:"Debt 1 Balance",pre:"$",min:0,  max:50000,step:100,def:5000},
+      {id:"debt2",  label:"Debt 2 Balance",pre:"$",min:0,  max:50000,step:100,def:8000},
+      {id:"payment",label:"Monthly Budget",pre:"$",min:100,max:10000,step:50, def:600},
+      {id:"rate",   label:"Avg Rate",      suf:"%",min:1,  max:30,   step:0.5,def:18},
+    ],
+    calc:({debt1,debt2,payment,rate})=>{
+      const total=+debt1+ +debt2,r=rate/100/12,pmt=Math.max(payment,total*r*1.02);
+      const months=r?Math.min(360,Math.ceil(-Math.log(1-(r*total)/pmt)/Math.log(1+r))):Math.ceil(total/payment);
+      const totalPaid=pmt*months;
+      return{
+        stats:[{label:"Debt-Free In",value:`${months} mo`,hi:true},{label:"Total Paid",value:$$(totalPaid)},{label:"Interest",value:$$(totalPaid-total)}],
+        chart:{type:"area",data:Array.from({length:Math.min(months,60)+1},(_,i)=>{const n=i*Math.ceil(months/Math.min(months,60));const rem=r?Math.max(0,total*(1+r)**n-pmt*((1+r)**n-1)/r):Math.max(0,total-pmt*n);return{x:`M${n}`,value:Math.round(rem)};})},
+      };
+    },
+  },
+];
+
+/* ══════════════════════════════════════
+   SHARED COMPONENTS
+══════════════════════════════════════ */
+const AdBox = () => (
+  <div className="no-print" style={{border:"1px dashed #c0c8d8",borderRadius:8,padding:"8px 16px",fontSize:11,color:"#aaa",textAlign:"center",marginBottom:14}}>
+    <i className="ti ti-ad" style={{fontSize:13,marginRight:4}}/> Advertisement · Google AdSense
+  </div>
+);
+
+const SliderField = ({f,value,onChange}) => {
+  const [draft,setDraft]=useState(null);
+  const display=draft!==null?draft:value;
+  const commit=raw=>{
+    try{
+      setDraft(null);
+      const n=parseFloat(String(raw).replace(/,/g,""));
+      if(!isNaN(n)&&isFinite(n))onChange(f.id,Math.min(f.max,Math.max(f.min,n)));
+    }catch(e){console.error("Input error:",e);setDraft(null);}
+  };
+  return(
+    <div style={{marginBottom:18}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+        <label style={{fontSize:13,color:"#555",fontWeight:500}}>{f.label}</label>
+        <div style={{display:"flex",alignItems:"center",gap:3,border:"1px solid #d0d5e0",borderRadius:8,padding:"3px 8px",background:"#fff"}}>
+          {f.pre&&<span style={{fontSize:13,color:"#bbb"}}>{f.pre}</span>}
+          <input type="text" inputMode="decimal" value={display}
+            onChange={e=>setDraft(e.target.value)}
+            onBlur={e=>commit(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&commit(e.target.value)}
+            style={{width:72,fontSize:14,fontWeight:500,textAlign:"right",border:"none",outline:"none",background:"transparent",color:"#1a1a2e",padding:0}}/>
+          {f.suf&&<span style={{fontSize:13,color:"#bbb"}}>{f.suf}</span>}
+        </div>
+      </div>
+      <input type="range" min={f.min} max={f.max} step={f.step} value={value} onChange={e=>{setDraft(null);onChange(f.id,+e.target.value);}}/>
+      <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
+        <span style={{fontSize:11,color:"#ccc"}}>{f.pre||""}{f.min.toLocaleString()}{f.suf||""}</span>
+        <span style={{fontSize:11,color:"#ccc"}}>{f.pre||""}{f.max.toLocaleString()}{f.suf||""}</span>
+      </div>
+    </div>
+  );
+};
+
+const StatRow = ({label,value,hi,diff}) => (
+  <div className={hi?"stat-hi":""} style={{background:hi?SITE.primary:"#f0f2f8",border:hi?"none":"1px solid #e0e4ef",borderRadius:8,padding:"11px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+    <span style={{fontSize:12,fontWeight:500,color:hi?"rgba(255,255,255,0.75)":"#666"}}>{label}</span>
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <span style={{fontSize:17,fontWeight:500,color:hi?"#fff":"#1a1a2e"}}>{value}</span>
+      {diff&&<span style={{fontSize:11,padding:"2px 6px",borderRadius:5,background:diff.good?"#d4f5e9":"#ffe0e0",color:diff.good?"#00734d":"#c0392b",fontWeight:600}}>{diff.label}</span>}
+    </div>
+  </div>
+);
+
+/* ══════════════════════════════════════
+   AMORTIZATION TABLE
+══════════════════════════════════════ */
+const AmortizationTable = ({params, calcName}) => {
+  const [view,setView] = useState("year");
+  const rows = useMemo(()=>{
+    try{ return buildAmort(params.principal, params.rate, params.months); }
+    catch(e){ console.error("Amort error:",e); return []; }
+  },[params.principal,params.rate,params.months]);
+  const yearRows = useMemo(()=>groupAmortByYear(rows),[rows]);
+
+  const exportAmort = () => {
+    const headers = view==="year"
+      ? ["Year","Total Payment","Principal Paid","Interest Paid","Balance"]
+      : ["Month","Payment","Principal","Interest","Balance"];
+    const data = view==="year"
+      ? yearRows.map(r=>[`Year ${r.year}`,$$2(r.payment),$$2(r.principal),$$2(r.interest),$$2(r.balance)])
+      : rows.map(r=>[r.month,$$2(r.payment),$$2(r.principal),$$2(r.interest),$$2(r.balance)]);
+    downloadCSV(`${calcName.toLowerCase().replace(/ /g,"-")}-amortization.csv`,[headers,...data]);
+  };
+
+  if(!rows.length) return null;
+
+  return(
+    <div style={{marginTop:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+        <span style={{fontSize:14,fontWeight:500,color:"#1a1a2e"}}>Amortization Schedule</span>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <div style={{display:"flex",background:"#f0f2f8",borderRadius:7,padding:2}}>
+            {["year","month"].map(v=>(
+              <button key={v} onClick={()=>setView(v)}
+                style={{padding:"4px 10px",borderRadius:5,border:"none",fontSize:12,fontWeight:500,
+                  background:view===v?"#fff":"transparent",color:view===v?SITE.primary:"#888",
+                  boxShadow:view===v?"0 1px 3px rgba(0,0,0,0.12)":"none"}}>
+                {v==="year"?"By Year":"By Month"}
+              </button>
+            ))}
+          </div>
+          <button className="no-print" onClick={exportAmort}
+            style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:7,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,color:"#555",fontWeight:500}}>
+            <i className="ti ti-download" style={{fontSize:13}}/>CSV
+          </button>
+        </div>
+      </div>
+      <div className="amort-wrap">
+        <table className="amort-table">
+          <thead>
+            {view==="year"
+              ? <tr><th>Year</th><th>Total Paid</th><th>Principal</th><th>Interest</th><th>Balance</th></tr>
+              : <tr><th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr>
+            }
+          </thead>
+          <tbody>
+            {view==="year"
+              ? yearRows.map(r=>(
+                <tr key={r.year} className="year-row">
+                  <td>Year {r.year}</td>
+                  <td>{$$2(r.payment)}</td>
+                  <td>{$$2(r.principal)}</td>
+                  <td>{$$2(r.interest)}</td>
+                  <td>{$$2(r.balance)}</td>
+                </tr>
+              ))
+              : rows.map(r=>(
+                <tr key={r.month}>
+                  <td>Mo {r.month}</td>
+                  <td>{$$2(r.payment)}</td>
+                  <td>{$$2(r.principal)}</td>
+                  <td>{$$2(r.interest)}</td>
+                  <td>{$$2(r.balance)}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════
+   EXPORT BAR
+══════════════════════════════════════ */
+const ExportBar = ({calcName, stats, amortParams}) => {
+  const exportCSV = () => {
+    const rows = [
+      ["Calculator",calcName],
+      ["Generated",new Date().toLocaleDateString()],
+      [],
+      ["Metric","Value"],
+      ...stats.map(s=>[s.label,s.value]),
+    ];
+    if(amortParams){
+      const amort = buildAmort(amortParams.principal, amortParams.rate, amortParams.months);
+      rows.push([],[" Month","Payment","Principal","Interest","Balance"]);
+      amort.forEach(r=>rows.push([r.month,$$2(r.payment),$$2(r.principal),$$2(r.interest),$$2(r.balance)]));
+    }
+    downloadCSV(`${calcName.toLowerCase().replace(/ /g,"-")}-results.csv`, rows);
+  };
+
+  return(
+    <div className="no-print" style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
+      <button onClick={exportCSV}
+        style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,fontWeight:500,color:"#555"}}>
+        <i className="ti ti-table-export" style={{fontSize:14}}/>Export CSV
+      </button>
+      <button onClick={()=>window.print()}
+        style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,fontWeight:500,color:"#555"}}>
+        <i className="ti ti-printer" style={{fontSize:14}}/>Print
+      </button>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════
+   COMPARISON DIFF HELPER
+══════════════════════════════════════ */
+const calcDiff = (statsA, statsB) => {
+  return statsA.map((s,i)=>{
+    const b = statsB[i];
+    if(!b)return s;
+    const aNum = parseFloat(String(s.value).replace(/[$,]/g,""));
+    const bNum = parseFloat(String(b.value).replace(/[$,]/g,""));
+    if(isNaN(aNum)||isNaN(bNum))return{...s,diff:null,bValue:b.value};
+    const delta = bNum - aNum;
+    const pct = aNum!==0 ? Math.abs(delta/aNum*100).toFixed(1) : null;
+    const label = delta===0 ? "same" : `${delta>0?"+":""}${pct?pct+"%":""}`;
+    const isPayment = s.hi;
+    const good = isPayment ? delta < 0 : delta > 0;
+    return{...s, bValue:b.value, diff:delta!==0?{label,good}:null};
+  });
+};
+
+/* ══════════════════════════════════════
+   HOME PAGE
+══════════════════════════════════════ */
+const HomePage = () => {
+  const STEPS=[{icon:"ti-hand-click",text:"Pick a calculator"},{icon:"ti-adjustments",text:"Slide or type values"},{icon:"ti-chart-bar",text:"See instant results"}];
+  const [tipOpen,setTipOpen]=useState(true);
+  const [compareMode,setCompareMode]=useState(false);
+  const [showAmort,setShowAmort]=useState(false);
+
+  const getDefaults=c=>Object.fromEntries(c.fields.map(f=>[f.id,f.def]));
+  const [activeId,setActiveId]=useState(CALCULATORS[0].id);
+  const [values,setValues]=useState(()=>getDefaults(CALCULATORS[0]));
+  const [valuesB,setValuesB]=useState(()=>getDefaults(CALCULATORS[0]));
+
+  const calc=CALCULATORS.find(c=>c.id===activeId);
+
+  const switchCalc=id=>{
+    setActiveId(id);
+    const defaults=getDefaults(CALCULATORS.find(c=>c.id===id));
+    setValues(defaults);
+    setValuesB(defaults);
+    setShowAmort(false);
+    setCompareMode(false);
+  };
+
+  const onChange=(id,val)=>setValues(p=>({...p,[id]:val}));
+  const onChangeB=(id,val)=>setValuesB(p=>({...p,[id]:val}));
+
+  const result=useMemo(()=>{
+    try{const r=calc.calc(values);if(!r||!r.stats)return null;return r;}
+    catch(e){console.error("Calc error:",e);return null;}
+  },[values,activeId]);
+
+  const resultB=useMemo(()=>{
+    if(!compareMode)return null;
+    try{const r=calc.calc(valuesB);if(!r||!r.stats)return null;return r;}
+    catch(e){console.error("Calc error B:",e);return null;}
+  },[valuesB,activeId,compareMode]);
+
+  const diffStats=useMemo(()=>{
+    if(!result||!resultB)return null;
+    return calcDiff(result.stats, resultB.stats);
+  },[result,resultB]);
+
+  return(
+    <div>
+      <AdBox/>
+
+      {/* How-to tip */}
+      {tipOpen?(
+        <div style={{background:"#eef2fb",border:"1px solid #d0d8f0",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <span style={{fontSize:13,fontWeight:500}}><i className="ti ti-info-circle" style={{marginRight:6,color:SITE.primary}}/>How to use LoanMapping</span>
+            <button onClick={()=>setTipOpen(false)} style={{background:"none",border:"none",fontSize:20,color:"#aaa",lineHeight:1,padding:0}}>×</button>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            {STEPS.map((s,i)=>(
+              <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",gap:6}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:SITE.primary,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <i className={`ti ${s.icon}`} style={{color:"#fff",fontSize:17}}/>
+                </div>
+                <span style={{fontSize:12,color:"#555",lineHeight:1.4}}>{s.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ):(
+        <button onClick={()=>setTipOpen(true)} className="no-print" style={{fontSize:12,color:"#aaa",background:"none",border:"1px solid #e0e4ef",borderRadius:8,padding:"4px 10px",marginBottom:14}}>
+          <i className="ti ti-info-circle" style={{marginRight:4}}/>How to use
+        </button>
+      )}
+
+      {/* Calculator tabs */}
+      <div className="calc-tabs no-print" style={{marginBottom:12}}>
+        {CALCULATORS.map(c=>(
+          <div key={c.id} style={{position:"relative",flexShrink:0}}
+            onMouseEnter={e=>{const t=e.currentTarget.querySelector(".tip");if(t)t.style.display="block";}}
+            onMouseLeave={e=>{const t=e.currentTarget.querySelector(".tip");if(t)t.style.display="none";}}>
+            <button onClick={()=>switchCalc(c.id)}
+              style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,
+                border:activeId===c.id?`2px solid ${SITE.primary}`:"1px solid #d0d5e0",
+                background:activeId===c.id?SITE.primary:"#fff",
+                color:activeId===c.id?"#fff":"#555",fontSize:13,fontWeight:500,whiteSpace:"nowrap"}}>
+              <i className={`ti ${c.icon}`} style={{fontSize:14}}/>{c.name}
+            </button>
+            <div className="tip" style={{display:"none",position:"absolute",top:"calc(100% + 8px)",left:0,zIndex:999,background:"#1a2a3a",border:"1px solid #2e4a6a",borderRadius:8,padding:"9px 13px",fontSize:12,color:"#e2eaf2",width:210,lineHeight:1.6,boxShadow:"0 6px 20px rgba(0,0,0,0.3)",pointerEvents:"none"}}>{c.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Description + action buttons */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+        <div style={{fontSize:13,color:"#555",padding:"8px 12px",background:"#eef2fb",borderRadius:8,borderLeft:`3px solid ${SITE.primary}`,flex:1,minWidth:0}}>
+          <i className="ti ti-bulb" style={{marginRight:6,color:SITE.primary}}/>{calc.desc}
+        </div>
+        <div className="no-print" style={{display:"flex",gap:6,flexShrink:0}}>
+          <button onClick={()=>{setCompareMode(p=>!p);setShowAmort(false);}}
+            style={{display:"flex",alignItems:"center",gap:5,padding:"7px 11px",borderRadius:8,
+              border:compareMode?`1.5px solid ${SITE.primary}`:"1px solid #d0d5e0",
+              background:compareMode?"#eef2fb":"#fff",
+              color:compareMode?SITE.primary:"#555",fontSize:12,fontWeight:500}}>
+            <i className="ti ti-versions" style={{fontSize:14}}/>Compare
+          </button>
+          {calc.hasAmort&&!compareMode&&(
+            <button onClick={()=>setShowAmort(p=>!p)}
+              style={{display:"flex",alignItems:"center",gap:5,padding:"7px 11px",borderRadius:8,
+                border:showAmort?`1.5px solid ${SITE.primary}`:"1px solid #d0d5e0",
+                background:showAmort?"#eef2fb":"#fff",
+                color:showAmort?SITE.primary:"#555",fontSize:12,fontWeight:500}}>
+              <i className="ti ti-table" style={{fontSize:14}}/>Schedule
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Print header (hidden on screen) */}
+      <div style={{display:"none"}} className="print-show">
+        <h2 style={{fontSize:18,fontWeight:600,color:SITE.primary,marginBottom:4}}>{calc.name} — LoanMapping</h2>
+        <p style={{fontSize:12,color:"#888",marginBottom:16}}>Generated {new Date().toLocaleDateString()} · loanmapping.com · For informational purposes only</p>
+      </div>
+
+      {/* ── COMPARE MODE ── */}
+      {compareMode?(
+        <div>
+          <div className="compare-grid">
+            {/* Scenario A */}
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:"#fff",background:SITE.primary,borderRadius:"8px 8px 0 0",padding:"6px 12px",marginBottom:0}}>
+                Scenario A
+              </div>
+              <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:"0 0 12px 12px",padding:"16px",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:14,fontWeight:500,marginBottom:16,color:SITE.primary}}>
+                  <i className={`ti ${calc.icon}`} style={{fontSize:17}}/>{calc.name}
+                </div>
+                {calc.fields.map(f=><SliderField key={f.id} f={f} value={values[f.id]} onChange={onChange}/>)}
+              </div>
+              <div>
+                {(diffStats||result?.stats)?.map((s,i)=><StatRow key={i} label={s.label} value={s.value} hi={s.hi}/>)}
+                {result?.chart&&(
+                  <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"14px",marginTop:4}}>
+                    <Chart chart={result.chart}/>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Scenario B */}
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:"#fff",background:SITE.accent,borderRadius:"8px 8px 0 0",padding:"6px 12px"}}>
+                Scenario B
+              </div>
+              <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:"0 0 12px 12px",padding:"16px",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:14,fontWeight:500,marginBottom:16,color:SITE.accent}}>
+                  <i className={`ti ${calc.icon}`} style={{fontSize:17}}/>{calc.name}
+                </div>
+                {calc.fields.map(f=><SliderField key={f.id} f={f} value={valuesB[f.id]} onChange={onChangeB}/>)}
+              </div>
+              <div>
+                {(diffStats||resultB?.stats)?.map((s,i)=>(
+                  <StatRow key={i} label={s.label} value={diffStats?diffStats[i].bValue:s.value} hi={s.hi} diff={diffStats?diffStats[i].diff:null}/>
+                ))}
+                {resultB?.chart&&(
+                  <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"14px",marginTop:4}}>
+                    <Chart chart={resultB.chart}/>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Compare summary */}
+          {diffStats&&(
+            <div style={{background:"#f8f9ff",border:"1px solid #d0d8f0",borderRadius:10,padding:"14px 16px",marginTop:14}}>
+              <div style={{fontSize:13,fontWeight:500,marginBottom:10,color:SITE.primary}}>
+                <i className="ti ti-arrows-diff" style={{marginRight:6}}/>Scenario Comparison
+              </div>
+              {diffStats.map((s,i)=>{
+                const aNum=parseFloat(String(s.value).replace(/[$,]/g,""));
+                const bNum=parseFloat(String(s.bValue).replace(/[$,]/g,""));
+                if(isNaN(aNum)||isNaN(bNum))return null;
+                const delta=bNum-aNum;
+                if(delta===0)return(
+                  <div key={i} style={{fontSize:13,color:"#555",marginBottom:6}}>
+                    <span style={{color:"#888"}}>{s.label}:</span> No difference
+                  </div>
+                );
+                const better=s.hi?delta<0:delta>0;
+                return(
+                  <div key={i} style={{fontSize:13,marginBottom:6,display:"flex",gap:6,alignItems:"center"}}>
+                    <span style={{color:"#888"}}>{s.label}:</span>
+                    <span style={{fontWeight:500,color:better?"#00734d":"#c0392b"}}>
+                      {delta>0?"+":""}{$$2(Math.abs(delta))} {better?"(B is better)":"(A is better)"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Compare export */}
+          {result&&resultB&&(
+            <div className="no-print" style={{display:"flex",gap:6,marginTop:10}}>
+              <button onClick={()=>{
+                const headers=["Metric","Scenario A","Scenario B","Difference"];
+                const rows=result.stats.map((s,i)=>{
+                  const b=resultB.stats[i];
+                  const aNum=parseFloat(String(s.value).replace(/[$,]/g,""));
+                  const bNum=parseFloat(String(b.value).replace(/[$,]/g,""));
+                  const diff=isNaN(aNum)||isNaN(bNum)?"N/A":(bNum-aNum>=0?"+":"")+$$2(bNum-aNum);
+                  return[s.label,s.value,b.value,diff];
+                });
+                downloadCSV(`${calc.name.toLowerCase().replace(/ /g,"-")}-comparison.csv`,[headers,...rows]);
+              }} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,fontWeight:500,color:"#555"}}>
+                <i className="ti ti-table-export" style={{fontSize:14}}/>Export Comparison
+              </button>
+              <button onClick={()=>window.print()}
+                style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,fontWeight:500,color:"#555"}}>
+                <i className="ti ti-printer" style={{fontSize:14}}/>Print
+              </button>
+            </div>
+          )}
+        </div>
+
+      ):(
+        /* ── NORMAL MODE ── */
+        <div>
+          <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+            <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"18px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,fontSize:15,fontWeight:500,marginBottom:20}}>
+                <i className={`ti ${calc.icon}`} style={{color:SITE.primary,fontSize:18}}/>{calc.name}
+              </div>
+              {calc.fields.map(f=><SliderField key={f.id} f={f} value={values[f.id]} onChange={onChange}/>)}
+            </div>
+            <div>
+              {result?.stats.map((s,i)=><StatRow key={i} {...s}/>)}
+              {result?.chart&&(
+                <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"14px",marginTop:4}}>
+                  <Chart chart={result.chart}/>
+                </div>
+              )}
+              {result&&<ExportBar calcName={calc.name} stats={result.stats} amortParams={result.amortParams}/>}
+            </div>
+          </div>
+
+          {/* Amortization schedule */}
+          {showAmort&&result?.amortParams&&(
+            <AmortizationTable params={result.amortParams} calcName={calc.name}/>
+          )}
+
+          <div style={{marginTop:10}}><AdBox/></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════
+   OTHER PAGES (unchanged)
+══════════════════════════════════════ */
+const AboutPage = () => (
+  <div style={{maxWidth:560}}>
+    <h2 style={{fontSize:20,fontWeight:500,marginBottom:16}}>About LoanMapping</h2>
+    <div style={{background:"#eef2fb",borderRadius:12,padding:"18px",marginBottom:16,borderLeft:`3px solid ${SITE.primary}`}}>
+      <p style={{fontSize:14,color:"#444",lineHeight:1.8}}>LoanMapping is a free financial calculator suite designed to help everyday people understand their loans, savings, and budgets — without needing a finance degree. No accounts, no data collection, no subscriptions. Just clear, instant answers.</p>
+    </div>
+    {[{icon:"ti-lock",title:"Your privacy first",desc:"We don't store any data you enter. All calculations happen in your browser. Nothing is sent to any server."},{icon:"ti-calculator",title:"Always free",desc:"Every calculator on LoanMapping is completely free to use. No premium tiers, no paywalls on core tools."},{icon:"ti-device-mobile",title:"Works everywhere",desc:"LoanMapping works on any device — phone, tablet, or desktop. Install it to your home screen for quick access."}].map((item,i)=>(
+      <div key={i} style={{display:"flex",gap:14,marginBottom:14,padding:"16px",background:"#fff",border:"1px solid #e0e4ef",borderRadius:12}}>
+        <div style={{width:38,height:38,borderRadius:"50%",background:SITE.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <i className={`ti ${item.icon}`} style={{color:"#fff",fontSize:18}}/>
+        </div>
+        <div>
+          <div style={{fontSize:14,fontWeight:500,marginBottom:4}}>{item.title}</div>
+          <div style={{fontSize:13,color:"#555",lineHeight:1.6}}>{item.desc}</div>
+        </div>
+      </div>
+    ))}
+    <p style={{fontSize:12,color:"#aaa",lineHeight:1.6,marginTop:8}}>LoanMapping provides calculators for informational purposes only. Results are estimates and should not be considered financial advice. Always consult a qualified financial advisor before making financial decisions.</p>
+  </div>
+);
+
+const PrivacyPage = () => (
+  <div style={{maxWidth:560}}>
+    <h2 style={{fontSize:20,fontWeight:500,marginBottom:4}}>Privacy Policy</h2>
+    <p style={{fontSize:12,color:"#aaa",marginBottom:20}}>Last updated: January 1, {SITE.year}</p>
+    {[
+      {title:"1. Information we collect",body:"LoanMapping does not collect, store, or transmit any personal data. All calculator inputs are processed entirely within your browser and are never sent to our servers."},
+      {title:"2. Cookies",body:"We use Google AdSense to display advertisements. Google may use cookies to serve ads based on your visits to this and other websites. You can opt out via Google's Ad Settings."},
+      {title:"3. Analytics",body:"We may use Google Analytics to understand how visitors use our site. This data is anonymized and aggregated. It does not identify you personally."},
+      {title:"4. Third-party links",body:"Our site may contain links to third-party websites. We are not responsible for their privacy practices."},
+      {title:"5. Children's privacy",body:"LoanMapping is not directed at children under 13. We do not knowingly collect information from children."},
+      {title:"6. Changes to this policy",body:"We may update this Privacy Policy from time to time by posting the new policy on this page."},
+      {title:"7. Contact us",body:`Questions? Email us at ${SITE.email}`},
+    ].map((s,i)=>(
+      <div key={i} style={{marginBottom:18}}>
+        <div style={{fontSize:14,fontWeight:500,marginBottom:5}}>{s.title}</div>
+        <p style={{fontSize:13,color:"#555",lineHeight:1.7}}>{s.body}</p>
+      </div>
+    ))}
+  </div>
+);
+
+const ContactPage = () => {
+  const [status,setStatus]=useState("idle");
+  const [form,setForm]=useState({name:"",email:"",message:""});
+  const ok=form.name&&form.email&&form.message;
+
+  const handleSubmit=async()=>{
+    if(!ok)return;
+    setStatus("sending");
+    try{
+      const res=await fetch("/api/contact",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name:form.name,email:form.email,message:form.message}),
+      });
+      const data=await res.json();
+      setStatus(data.success?"success":"error");
+    }catch(e){
+      console.error("Contact error:",e);
+      setStatus("error");
+    }
+  };
+
+  return(
+    <div style={{maxWidth:480}}>
+      <h2 style={{fontSize:20,fontWeight:500,marginBottom:6}}>Contact Us</h2>
+      <p style={{fontSize:13,color:"#555",marginBottom:20,lineHeight:1.6}}>Have a question, suggestion, or found a bug? We'd love to hear from you.</p>
+      {status==="success"?(
+        <div style={{background:"#eef9f5",border:`1px solid ${SITE.accent}`,borderRadius:12,padding:"24px",textAlign:"center"}}>
+          <i className="ti ti-circle-check" style={{fontSize:40,color:SITE.accent,display:"block",marginBottom:10}}/>
+          <div style={{fontSize:15,fontWeight:500,marginBottom:6}}>Message sent!</div>
+          <div style={{fontSize:13,color:"#555"}}>We'll get back to you at {form.email}</div>
+          <button onClick={()=>{setStatus("idle");setForm({name:"",email:"",message:""});}} style={{marginTop:14,background:"none",border:"1px solid #d0d5e0",borderRadius:8,padding:"6px 14px",fontSize:13,color:"#555"}}>
+            Send another
+          </button>
+        </div>
+      ):(
+        <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"20px",display:"flex",flexDirection:"column",gap:14}}>
+          {[{id:"name",label:"Your name",type:"text",ph:"Jane Smith"},{id:"email",label:"Email address",type:"email",ph:"jane@example.com"}].map(f=>(
+            <div key={f.id}>
+              <label style={{display:"block",fontSize:13,fontWeight:500,marginBottom:5,color:"#555"}}>{f.label}</label>
+              <input type={f.type} placeholder={f.ph} value={form[f.id]} onChange={e=>setForm(p=>({...p,[f.id]:e.target.value}))} disabled={status==="sending"}/>
+            </div>
+          ))}
+          <div>
+            <label style={{display:"block",fontSize:13,fontWeight:500,marginBottom:5,color:"#555"}}>Message</label>
+            <textarea placeholder="Your message..." rows={4} value={form.message} onChange={e=>setForm(p=>({...p,message:e.target.value}))} disabled={status==="sending"} style={{resize:"vertical",fontFamily:"inherit"}}/>
+          </div>
+          {status==="error"&&(
+            <div style={{background:"#fff0f0",border:"1px solid #ffcccc",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#cc0000"}}>
+              <i className="ti ti-alert-circle" style={{marginRight:6}}/>Something went wrong. Please try again.
+            </div>
+          )}
+          <button onClick={handleSubmit} disabled={!ok||status==="sending"}
+            style={{background:ok&&status!=="sending"?SITE.primary:"#ccc",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,fontWeight:500,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            {status==="sending"?<><i className="ti ti-loader-2" style={{animation:"spin 1s linear infinite"}}/>Sending...</>:<>Send message <i className="ti ti-send"/></>}
+          </button>
+        </div>
+      )}
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════ */
+const NAV=[{id:"about",label:"About",icon:"ti-info-circle"},{id:"privacy",label:"Privacy",icon:"ti-lock"},{id:"contact",label:"Contact",icon:"ti-mail"}];
+
+function App(){
+  const [page,setPage]=useState("home");
+  return(
+    <div className="app">
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid #e0e4ef",marginBottom:16,flexWrap:"wrap",gap:8}}>
+        <h1 style={{position:"absolute",width:1,height:1,overflow:"hidden",clip:"rect(0,0,0,0)",whiteSpace:"nowrap"}}>Free Loan & Mortgage Calculator — LoanMapping</h1>
+        <button onClick={()=>setPage("home")} style={{display:"flex",alignItems:"baseline",gap:8,background:"none",border:"none",padding:0}}>
+          <span style={{fontSize:20,fontWeight:600,color:SITE.primary}}>
+            <i className="ti ti-map-2" style={{marginRight:6,fontSize:18,verticalAlign:"-2px"}}/>{SITE.name}
+          </span>
+          <span className="logo-tagline" style={{fontSize:12,color:"#bbb"}}>{SITE.tagline}</span>
+        </button>
+        <nav style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+          {NAV.map(p=>(
+            <button key={p.id} onClick={()=>setPage(p.id)}
+              style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:8,
+                border:page===p.id?`1.5px solid ${SITE.primary}`:"1px solid #e0e4ef",
+                background:page===p.id?"#eef2fb":"transparent",
+                color:page===p.id?"#1a1a2e":"#888",fontSize:12,fontWeight:500}}>
+              <i className={`ti ${p.icon}`} style={{fontSize:13}}/>
+              <span className="nav-label">{p.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+      {page==="home"    &&<HomePage/>}
+      {page==="about"   &&<AboutPage/>}
+      {page==="privacy" &&<PrivacyPage/>}
+      {page==="contact" &&<ContactPage/>}
+      <div className="no-print" style={{marginTop:28,paddingTop:14,borderTop:"1px solid #e0e4ef",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+        <span style={{fontSize:11,color:"#bbb"}}>© {SITE.year} LoanMapping · For informational purposes only · Not financial advice</span>
+        <div style={{display:"flex",gap:12}}>
+          {NAV.map(p=><button key={p.id} onClick={()=>setPage(p.id)} style={{fontSize:11,color:"#bbb",background:"none",border:"none",padding:0,cursor:"pointer"}}>{p.label}</button>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
+</script>
+</body>
+</html>
