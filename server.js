@@ -6,8 +6,22 @@ const port = process.env.PORT || 3000;
 app.use(express.static('.'));
 app.use(express.json({ limit: '1mb' }));
 
+const calcRoutes = [
+  '/loan-calculator',
+  '/compound-interest-calculator',
+  '/mortgage-calculator',
+  '/budget-planner',
+  '/debt-snowball-calculator',
+];
+
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
+});
+
+calcRoutes.forEach(route => {
+  app.get(route, (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+  });
 });
 
 app.post('/api/contact', async (req, res) => {

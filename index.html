@@ -13,17 +13,17 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7675700377525171" crossorigin="anonymous"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Free Loan & Mortgage Calculator | LoanMapping</title>
+<title>Free Loan &amp; Mortgage Calculator | LoanMapping</title>
 <meta name="description" content="Free loan, mortgage, compound interest, auto loan, personal loan, amortization schedule, debt payoff and budget calculators. No login required. Instant results at LoanMapping."/>
 <meta name="keywords" content="loan calculator, mortgage calculator, compound interest calculator, debt snowball, budget planner, free financial calculator, auto loan calculator, personal loan calculator, amortization schedule, debt payoff calculator, 50 30 20 budget rule, monthly payment calculator"/>
 <meta name="robots" content="index, follow"/>
-<meta property="og:title" content="Free Loan & Mortgage Calculator | LoanMapping"/>
+<meta property="og:title" content="Free Loan &amp; Mortgage Calculator | LoanMapping"/>
 <meta property="og:description" content="Free loan, mortgage, compound interest and budget calculators. No login required. Instant results."/>
 <meta property="og:type" content="website"/>
 <meta property="og:url" content="https://www.loanmapping.com"/>
 <meta property="og:image" content="https://www.loanmapping.com/og-image.png"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="Free Loan & Mortgage Calculator | LoanMapping"/>
+<meta name="twitter:title" content="Free Loan &amp; Mortgage Calculator | LoanMapping"/>
 <meta name="twitter:description" content="Free loan, mortgage, compound interest and budget calculators. No login required. Instant results."/>
 <meta name="twitter:image" content="https://www.loanmapping.com/og-image.png"/>
 <link rel="canonical" href="https://www.loanmapping.com"/>
@@ -53,10 +53,11 @@ input[type=range]{width:100%;accent-color:#1a3a5c;cursor:pointer;height:4px}
 input[type=text],input[type=email],textarea{width:100%;padding:8px 10px;border:1px solid #d0d5e0;border-radius:8px;font-size:14px;background:#fff;color:#1a1a2e;outline:none;transition:border .2s}
 input[type=text]:focus,input[type=email]:focus,textarea:focus{border-color:#1a3a5c}
 button{cursor:pointer;font-family:inherit}
-/* Scrollable tabs — no wrapping on mobile */
+.field-input-box{display:flex;align-items:center;gap:3px;border:1.5px solid #d0d5e0;border-radius:8px;padding:3px 8px;background:#fff;transition:border .2s;cursor:text}
+.field-input-box:hover{border-color:#1a3a5c}
+.field-input-box:focus-within{border-color:#1a3a5c;box-shadow:0 0 0 2px rgba(26,58,92,0.08)}
 .calc-tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none;flex-wrap:nowrap}
 .calc-tabs::-webkit-scrollbar{display:none}
-/* Amortization table */
 .amort-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-height:340px;overflow-y:auto;border-radius:8px;border:1px solid #e0e4ef}
 .amort-table{width:100%;border-collapse:collapse;font-size:12px;min-width:380px}
 .amort-table th{background:#f0f2f8;padding:7px 10px;text-align:right;font-weight:600;color:#555;border-bottom:2px solid #e0e4ef;position:sticky;top:0;z-index:1}
@@ -65,9 +66,14 @@ button{cursor:pointer;font-family:inherit}
 .amort-table td:first-child{text-align:left;font-weight:500;color:#1a1a2e}
 .amort-table tr:hover td{background:#f5f7ff}
 .amort-table tr.year-row td{background:#eef2fb;font-weight:600;color:#1a3a5c}
-/* Compare grid */
 .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-/* Mobile */
+.seo-section{margin-top:32px;padding-top:24px;border-top:1px solid #e0e4ef}
+.seo-section h2{font-size:18px;font-weight:500;color:#1a3a5c;margin-bottom:10px}
+.seo-intro{font-size:14px;color:#555;line-height:1.8;margin-bottom:20px}
+.faq-list{display:flex;flex-direction:column;gap:10px}
+.faq-item{background:#f8f9ff;border:1px solid #e0e4ef;border-radius:10px;padding:14px 16px}
+.faq-q{font-size:14px;font-weight:500;color:#1a3a5c;margin-bottom:5px}
+.faq-a{font-size:13px;color:#555;line-height:1.7}
 @media(max-width:640px){
   .two-col{grid-template-columns:1fr !important}
   .compare-grid{grid-template-columns:1fr !important}
@@ -77,7 +83,6 @@ button{cursor:pointer;font-family:inherit}
   .calc-desc-row{flex-direction:column !important;align-items:stretch !important}
   .calc-desc-row>div:last-child{display:flex;justify-content:flex-start}
 }
-/* Print */
 @media print{
   .no-print{display:none !important}
   body{background:#fff}
@@ -87,13 +92,14 @@ button{cursor:pointer;font-family:inherit}
   .amort-wrap{max-height:none;overflow:visible;border:1px solid #ccc}
   button{display:none !important}
   .stat-hi{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .seo-section{display:none}
 }
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useMemo } = React;
+const { useState, useMemo, useEffect } = React;
 
 const SITE = {
   name:"LoanMapping", tagline:"Map your loan journey",
@@ -144,7 +150,6 @@ const buildAmort = (principal, annualRate, months) => {
   });
 };
 
-/* group monthly rows into annual summaries */
 const groupAmortByYear = rows => {
   const years = {};
   rows.forEach(r => {
@@ -311,6 +316,105 @@ const CALCULATORS = [
 ];
 
 /* ══════════════════════════════════════
+   URL ROUTING + SEO CONTENT
+══════════════════════════════════════ */
+const SLUG_TO_ID = {
+  'loan-calculator':'loan',
+  'compound-interest-calculator':'compound',
+  'mortgage-calculator':'mortgage',
+  'budget-planner':'budget',
+  'debt-snowball-calculator':'debt',
+};
+
+const SEO_CONTENT = {
+  loan:{
+    slug:'loan-calculator',
+    title:'Loan Payoff Calculator — Free Monthly Payment Estimator | LoanMapping',
+    metaDesc:'Calculate your monthly loan payment, total interest, and payoff date instantly. Free loan payoff calculator — no login required.',
+    h2:'Free Loan Payoff Calculator',
+    intro:'Use our free loan calculator to find your exact monthly payment, total interest paid, and true cost of any personal or auto loan. Enter your loan amount, interest rate, and term — results update instantly. You can use the slider or type any value directly into the input box.',
+    faqs:[
+      {q:'How is my monthly loan payment calculated?',a:'Your monthly payment is calculated using the standard amortization formula: P × r(1+r)^n / ((1+r)^n - 1), where P is the loan amount, r is the monthly interest rate, and n is the number of months.'},
+      {q:'What is a good interest rate for a personal loan?',a:'A good personal loan rate depends on your credit score. Excellent credit (720+) can qualify for rates of 6–12%. Average credit typically sees 13–20%. Rates above 20% are considered high — consider improving your credit score first.'},
+      {q:'How can I pay off my loan faster?',a:'Make extra payments toward your principal, pay bi-weekly instead of monthly (results in one extra payment per year), or refinance at a lower rate. Even $50 extra per month can shave months off your loan.'},
+      {q:'Does paying off a loan early save money?',a:'Yes. Early payoff reduces the number of months interest accrues, saving you money. Check for prepayment penalties before doing so — most modern loans do not have them.'},
+    ]
+  },
+  compound:{
+    slug:'compound-interest-calculator',
+    title:'Compound Interest Calculator — Free Savings Growth Tool | LoanMapping',
+    metaDesc:'See how your savings grow with compound interest. Calculate future value with monthly contributions. Free compound interest calculator — instant results.',
+    h2:'Free Compound Interest Calculator',
+    intro:'Our compound interest calculator shows exactly how much your savings will grow over time with regular contributions. See the power of compounding — the earlier you start, the more your money multiplies. Adjust any value with the slider or type it directly.',
+    faqs:[
+      {q:'What is compound interest?',a:'Compound interest is interest calculated on both the initial principal and the accumulated interest from previous periods. Unlike simple interest, it grows exponentially — your interest earns interest.'},
+      {q:'What is the Rule of 72?',a:'The Rule of 72 estimates how long it takes to double your money. Divide 72 by your annual interest rate. At 7% annual return, your money doubles in roughly 10.3 years.'},
+      {q:'How often is interest compounded?',a:'Interest can compound daily, monthly, quarterly, or annually. More frequent compounding means slightly higher returns. This calculator uses monthly compounding, which is most common for savings accounts.'},
+      {q:'How much should I save each month?',a:'A common guideline is to save at least 20% of your income (the 50/30/20 rule). For retirement, aim to save 10–15% specifically for that goal. The best amount depends on your income, expenses, and goals.'},
+    ]
+  },
+  mortgage:{
+    slug:'mortgage-calculator',
+    title:'Mortgage Calculator — Free Monthly Payment Estimator | LoanMapping',
+    metaDesc:'Calculate your monthly mortgage payment, total interest, and amortization schedule instantly. Free mortgage calculator — no login required.',
+    h2:'Free Mortgage Calculator',
+    intro:'Our free mortgage calculator estimates your monthly payment based on home price, down payment, interest rate, and loan term. See a full amortization schedule and understand the true cost of your home loan before you sign. Use sliders or type values directly.',
+    faqs:[
+      {q:'How much house can I afford?',a:"A common rule is to keep your monthly mortgage payment below 28% of your gross monthly income, and total debt payments below 36%. On a $6,000/month income, that's a maximum mortgage payment of $1,680."},
+      {q:'What is a good mortgage interest rate?',a:'As of 2025, a 30-year fixed rate below 7% is considered competitive for buyers with good credit (700+). Rates vary by lender, loan type, and credit score — always compare at least 3 lenders.'},
+      {q:'How much should my down payment be?',a:'The traditional down payment is 20%, which avoids private mortgage insurance (PMI). However, many loan programs accept 3–5% down. A larger down payment means a smaller loan and lower monthly payment.'},
+      {q:'What is an amortization schedule?',a:'An amortization schedule shows each monthly payment broken down into principal and interest. Early payments are mostly interest; later payments shift toward principal. Click Schedule above to see yours.'},
+    ]
+  },
+  budget:{
+    slug:'budget-planner',
+    title:'Budget Planner — Free 50/30/20 Budget Calculator | LoanMapping',
+    metaDesc:'Plan your monthly budget using the 50/30/20 rule. Split income into needs, wants, and savings automatically. Free budget planner — instant results.',
+    h2:'Free 50/30/20 Budget Planner',
+    intro:'Our budget planner uses the proven 50/30/20 rule to help you split your monthly income into needs (50%), wants (30%), and savings (20%). Enter your income with the slider or type it directly — your budget plan updates instantly.',
+    faqs:[
+      {q:'What is the 50/30/20 budget rule?',a:'The 50/30/20 rule allocates 50% of after-tax income to needs (rent, groceries, utilities), 30% to wants (dining out, entertainment, subscriptions), and 20% to savings and debt repayment. It is a simple, flexible framework for financial health.'},
+      {q:"What counts as a 'need' vs a 'want'?",a:'Needs are expenses required for basic living: housing, utilities, groceries, minimum debt payments, and transportation to work. Wants are anything beyond that — restaurants, Netflix, gym memberships, vacations.'},
+      {q:'What if my needs exceed 50%?',a:"Many people in high-cost cities find needs exceed 50%. That's okay — adjust the percentages to what's realistic for your situation. The goal is to ensure savings never falls below 10%."},
+      {q:'How much should I have in an emergency fund?',a:'Financial experts recommend 3–6 months of living expenses in an easily accessible savings account. Start with $1,000 as a starter emergency fund, then build toward the full amount.'},
+    ]
+  },
+  debt:{
+    slug:'debt-snowball-calculator',
+    title:'Debt Snowball Calculator — Free Debt Payoff Planner | LoanMapping',
+    metaDesc:'Calculate exactly when you will be debt-free using the debt snowball method. Track multiple debts and see your payoff timeline. Free — no login required.',
+    h2:'Free Debt Snowball Calculator',
+    intro:'The debt snowball method helps you pay off multiple debts by rolling payments from the smallest balance to the next. Our calculator shows exactly how many months until you are debt-free and how much interest you will save. Use sliders or type balances directly.',
+    faqs:[
+      {q:'What is the debt snowball method?',a:'The debt snowball involves paying minimum payments on all debts except the smallest, which you attack aggressively. Once paid off, roll that payment into the next smallest debt — creating a growing snowball of payments.'},
+      {q:'Debt snowball vs debt avalanche — which is better?',a:'The debt avalanche (highest-interest first) saves more money mathematically. The debt snowball (smallest balance first) provides faster wins that keep you motivated. Both work — choose the one you will stick to.'},
+      {q:'How much extra should I pay toward debt?',a:'Any amount helps. Even $50–$100 extra per month can significantly reduce your payoff timeline. Use the slider above to see the impact of different monthly payments on your debt-free date.'},
+      {q:'Should I invest while paying off debt?',a:"If your employer offers a 401(k) match, contribute at least enough to get the full match first — it's a 100% return. For other debt, compare your interest rate vs expected investment return to decide."},
+    ]
+  },
+};
+
+const updatePageMeta = id => {
+  const c = SEO_CONTENT[id];
+  if(!c) return;
+  document.title = c.title;
+  document.querySelector('meta[name="description"]')?.setAttribute('content',c.metaDesc);
+  document.querySelector('meta[property="og:title"]')?.setAttribute('content',c.title);
+  document.querySelector('meta[property="og:description"]')?.setAttribute('content',c.metaDesc);
+  document.querySelector('meta[name="twitter:title"]')?.setAttribute('content',c.title);
+  document.querySelector('meta[name="twitter:description"]')?.setAttribute('content',c.metaDesc);
+  document.querySelector('link[rel="canonical"]')?.setAttribute('href',`https://www.loanmapping.com/${c.slug}`);
+  let el=document.getElementById('dyn-schema');
+  if(!el){el=document.createElement('script');el.id='dyn-schema';el.type='application/ld+json';document.head.appendChild(el);}
+  el.textContent=JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":c.faqs.map(f=>({"@type":"Question","name":f.q,"acceptedAnswer":{"@type":"Answer","text":f.a}}))});
+};
+
+const getCalcFromURL = () => {
+  const path = window.location.pathname.replace(/^\//, '');
+  return SLUG_TO_ID[path] || CALCULATORS[0].id;
+};
+
+/* ══════════════════════════════════════
    SHARED COMPONENTS
 ══════════════════════════════════════ */
 const AdBox = () => (
@@ -333,14 +437,15 @@ const SliderField = ({f,value,onChange}) => {
     <div style={{marginBottom:18}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
         <label style={{fontSize:13,color:"#555",fontWeight:500}}>{f.label}</label>
-        <div style={{display:"flex",alignItems:"center",gap:3,border:"1px solid #d0d5e0",borderRadius:8,padding:"3px 8px",background:"#fff"}}>
-          {f.pre&&<span style={{fontSize:13,color:"#bbb"}}>{f.pre}</span>}
+        <div className="field-input-box" title="Click to type a value">
+          {f.pre&&<span style={{fontSize:13,color:"#aaa"}}>{f.pre}</span>}
           <input type="text" inputMode="decimal" value={display}
             onChange={e=>setDraft(e.target.value)}
             onBlur={e=>commit(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&commit(e.target.value)}
             style={{width:72,fontSize:14,fontWeight:500,textAlign:"right",border:"none",outline:"none",background:"transparent",color:"#1a1a2e",padding:0}}/>
-          {f.suf&&<span style={{fontSize:13,color:"#bbb"}}>{f.suf}</span>}
+          {f.suf&&<span style={{fontSize:13,color:"#aaa"}}>{f.suf}</span>}
+          <i className="ti ti-pencil" style={{fontSize:11,color:"#ccc",marginLeft:2}}/>
         </div>
       </div>
       <input type="range" min={f.min} max={f.max} step={f.step} value={value} onChange={e=>{setDraft(null);onChange(f.id,+e.target.value);}}/>
@@ -496,28 +601,70 @@ const calcDiff = (statsA, statsB) => {
 };
 
 /* ══════════════════════════════════════
+   SEO CONTENT SECTION
+══════════════════════════════════════ */
+const SEOSection = ({calcId}) => {
+  const content = SEO_CONTENT[calcId];
+  if(!content) return null;
+  return(
+    <div className="seo-section">
+      <h2>{content.h2}</h2>
+      <p className="seo-intro">{content.intro}</p>
+      <div className="faq-list">
+        {content.faqs.map((faq,i)=>(
+          <div key={i} className="faq-item">
+            <div className="faq-q">{faq.q}</div>
+            <p className="faq-a">{faq.a}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════
    HOME PAGE
 ══════════════════════════════════════ */
 const HomePage = () => {
-  const STEPS=[{icon:"ti-hand-click",text:"Pick a calculator"},{icon:"ti-adjustments",text:"Slide or type values"},{icon:"ti-chart-bar",text:"See instant results"}];
+  const STEPS=[{icon:"ti-hand-click",text:"Pick a calculator"},{icon:"ti-pencil",text:"Slide or type values"},{icon:"ti-chart-bar",text:"See instant results"}];
   const [tipOpen,setTipOpen]=useState(true);
   const [compareMode,setCompareMode]=useState(false);
   const [showAmort,setShowAmort]=useState(false);
 
   const getDefaults=c=>Object.fromEntries(c.fields.map(f=>[f.id,f.def]));
-  const [activeId,setActiveId]=useState(CALCULATORS[0].id);
-  const [values,setValues]=useState(()=>getDefaults(CALCULATORS[0]));
-  const [valuesB,setValuesB]=useState(()=>getDefaults(CALCULATORS[0]));
+  const [activeId,setActiveId]=useState(()=>getCalcFromURL());
+  const [values,setValues]=useState(()=>getDefaults(CALCULATORS.find(c=>c.id===getCalcFromURL())||CALCULATORS[0]));
+  const [valuesB,setValuesB]=useState(()=>getDefaults(CALCULATORS.find(c=>c.id===getCalcFromURL())||CALCULATORS[0]));
 
   const calc=CALCULATORS.find(c=>c.id===activeId);
 
+  useEffect(()=>{
+    updatePageMeta(activeId);
+    const handlePop=()=>{
+      const id=getCalcFromURL();
+      const c=CALCULATORS.find(x=>x.id===id)||CALCULATORS[0];
+      setActiveId(id);
+      setValues(getDefaults(c));
+      setValuesB(getDefaults(c));
+      setShowAmort(false);
+      setCompareMode(false);
+      updatePageMeta(id);
+    };
+    window.addEventListener('popstate',handlePop);
+    return()=>window.removeEventListener('popstate',handlePop);
+  },[]);
+
   const switchCalc=id=>{
     setActiveId(id);
-    const defaults=getDefaults(CALCULATORS.find(c=>c.id===id));
+    const c=CALCULATORS.find(x=>x.id===id);
+    const defaults=getDefaults(c);
     setValues(defaults);
     setValuesB(defaults);
     setShowAmort(false);
     setCompareMode(false);
+    const slug=SEO_CONTENT[id]?.slug||id;
+    window.history.pushState({calcId:id},'',`/${slug}`);
+    updatePageMeta(id);
   };
 
   const onChange=(id,val)=>setValues(p=>({...p,[id]:val}));
@@ -543,7 +690,6 @@ const HomePage = () => {
     <div>
       <AdBox/>
 
-      {/* How-to tip */}
       {tipOpen?(
         <div style={{background:"#eef2fb",border:"1px solid #d0d8f0",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
@@ -567,7 +713,6 @@ const HomePage = () => {
         </button>
       )}
 
-      {/* Calculator tabs */}
       <div className="calc-tabs no-print" style={{marginBottom:12}}>
         {CALCULATORS.map(c=>(
           <div key={c.id} style={{position:"relative",flexShrink:0}}
@@ -585,7 +730,6 @@ const HomePage = () => {
         ))}
       </div>
 
-      {/* Description + action buttons */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:16,flexWrap:"wrap"}}>
         <div style={{fontSize:13,color:"#555",padding:"8px 12px",background:"#eef2fb",borderRadius:8,borderLeft:`3px solid ${SITE.primary}`,flex:1,minWidth:0}}>
           <i className="ti ti-bulb" style={{marginRight:6,color:SITE.primary}}/>{calc.desc}
@@ -610,17 +754,14 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Print header (hidden on screen) */}
       <div style={{display:"none"}} className="print-show">
         <h2 style={{fontSize:18,fontWeight:600,color:SITE.primary,marginBottom:4}}>{calc.name} — LoanMapping</h2>
         <p style={{fontSize:12,color:"#888",marginBottom:16}}>Generated {new Date().toLocaleDateString()} · loanmapping.com · For informational purposes only</p>
       </div>
 
-      {/* ── COMPARE MODE ── */}
       {compareMode?(
         <div>
           <div className="compare-grid">
-            {/* Scenario A */}
             <div>
               <div style={{fontSize:12,fontWeight:600,color:"#fff",background:SITE.primary,borderRadius:"8px 8px 0 0",padding:"6px 12px",marginBottom:0}}>
                 Scenario A
@@ -641,7 +782,6 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Scenario B */}
             <div>
               <div style={{fontSize:12,fontWeight:600,color:"#fff",background:SITE.accent,borderRadius:"8px 8px 0 0",padding:"6px 12px"}}>
                 Scenario B
@@ -665,7 +805,6 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Compare summary */}
           {diffStats&&(
             <div style={{background:"#f8f9ff",border:"1px solid #d0d8f0",borderRadius:10,padding:"14px 16px",marginTop:14}}>
               <div style={{fontSize:13,fontWeight:500,marginBottom:10,color:SITE.primary}}>
@@ -694,7 +833,6 @@ const HomePage = () => {
             </div>
           )}
 
-          {/* Compare export */}
           {result&&resultB&&(
             <div className="no-print" style={{display:"flex",gap:6,marginTop:10}}>
               <button onClick={()=>{
@@ -719,7 +857,6 @@ const HomePage = () => {
         </div>
 
       ):(
-        /* ── NORMAL MODE ── */
         <div>
           <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
             <div style={{background:"#fff",border:"1px solid #e0e4ef",borderRadius:12,padding:"18px"}}>
@@ -739,12 +876,13 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Amortization schedule */}
           {showAmort&&result?.amortParams&&(
             <AmortizationTable params={result.amortParams} calcName={calc.name}/>
           )}
 
           <div style={{marginTop:10}}><AdBox/></div>
+
+          <SEOSection calcId={activeId}/>
         </div>
       )}
     </div>
@@ -752,7 +890,7 @@ const HomePage = () => {
 };
 
 /* ══════════════════════════════════════
-   OTHER PAGES (unchanged)
+   OTHER PAGES
 ══════════════════════════════════════ */
 const AboutPage = () => (
   <div style={{maxWidth:560}}>
@@ -869,7 +1007,7 @@ function App(){
   return(
     <div className="app">
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid #e0e4ef",marginBottom:16,flexWrap:"wrap",gap:8}}>
-        <h1 style={{position:"absolute",width:1,height:1,overflow:"hidden",clip:"rect(0,0,0,0)",whiteSpace:"nowrap"}}>Free Loan & Mortgage Calculator — LoanMapping</h1>
+        <h1 style={{position:"absolute",width:1,height:1,overflow:"hidden",clip:"rect(0,0,0,0)",whiteSpace:"nowrap"}}>Free Loan &amp; Mortgage Calculator — LoanMapping</h1>
         <button onClick={()=>setPage("home")} style={{display:"flex",alignItems:"baseline",gap:8,background:"none",border:"none",padding:0}}>
           <span style={{fontSize:20,fontWeight:600,color:SITE.primary}}>
             <i className="ti ti-map-2" style={{marginRight:6,fontSize:18,verticalAlign:"-2px"}}/>{SITE.name}
