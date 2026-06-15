@@ -14,7 +14,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Free Loan &amp; Mortgage Calculator | LoanMapping</title>
-<meta name="description" content="Free loan, mortgage, compound interest, auto loan, personal loan, amortization schedule, debt payoff and budget calculators. No login required. Instant results at LoanMapping."/>
+<meta name="description" content="Free loan, mortgage, compound interest, and budget calculators. No signup, no login — instant results. Map your financial journey with LoanMapping."/>
 <meta name="keywords" content="loan calculator, mortgage calculator, compound interest calculator, debt snowball, budget planner, free financial calculator, auto loan calculator, personal loan calculator, amortization schedule, debt payoff calculator, 50 30 20 budget rule, monthly payment calculator"/>
 <meta name="robots" content="index, follow"/>
 <meta property="og:title" content="Free Loan &amp; Mortgage Calculator | LoanMapping"/>
@@ -26,6 +26,8 @@
 <meta name="twitter:title" content="Free Loan &amp; Mortgage Calculator | LoanMapping"/>
 <meta name="twitter:description" content="Free loan, mortgage, compound interest and budget calculators. No login required. Instant results."/>
 <meta name="twitter:image" content="https://www.loanmapping.com/og-image.png"/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a3a5c'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='bold' fill='white' text-anchor='middle'%3ELM%3C/text%3E%3C/svg%3E"/>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a3a5c'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='bold' fill='white' text-anchor='middle'%3ELM%3C/text%3E%3C/svg%3E"/>
 <link rel="canonical" href="https://www.loanmapping.com"/>
 <script type="application/ld+json">
 {
@@ -688,6 +690,10 @@ const HomePage = () => {
 
   return(
     <div>
+      <h1 style={{fontSize:15,fontWeight:500,color:"#555",marginBottom:12,paddingBottom:10,borderBottom:"1px solid #e0e4ef"}}>
+        {SEO_CONTENT[activeId]?.h2 || 'Free Financial Calculators'}
+      </h1>
+
       <AdBox/>
 
       {tipOpen?(
@@ -718,13 +724,15 @@ const HomePage = () => {
           <div key={c.id} style={{position:"relative",flexShrink:0}}
             onMouseEnter={e=>{const t=e.currentTarget.querySelector(".tip");if(t)t.style.display="block";}}
             onMouseLeave={e=>{const t=e.currentTarget.querySelector(".tip");if(t)t.style.display="none";}}>
-            <button onClick={()=>switchCalc(c.id)}
+            <a href={`/${SEO_CONTENT[c.id]?.slug||c.id}`}
+              onClick={e=>{e.preventDefault();switchCalc(c.id);}}
               style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,
                 border:activeId===c.id?`2px solid ${SITE.primary}`:"1px solid #d0d5e0",
                 background:activeId===c.id?SITE.primary:"#fff",
-                color:activeId===c.id?"#fff":"#555",fontSize:13,fontWeight:500,whiteSpace:"nowrap"}}>
+                color:activeId===c.id?"#fff":"#555",fontSize:13,fontWeight:500,whiteSpace:"nowrap",
+                textDecoration:"none"}}>
               <i className={`ti ${c.icon}`} style={{fontSize:14}}/>{c.name}
-            </button>
+            </a>
             <div className="tip" style={{display:"none",position:"absolute",top:"calc(100% + 8px)",left:0,zIndex:999,background:"#1a2a3a",border:"1px solid #2e4a6a",borderRadius:8,padding:"9px 13px",fontSize:12,color:"#e2eaf2",width:210,lineHeight:1.6,boxShadow:"0 6px 20px rgba(0,0,0,0.3)",pointerEvents:"none"}}>{c.desc}</div>
           </div>
         ))}
