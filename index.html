@@ -46,6 +46,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -141,6 +143,143 @@ const downloadCSV = (filename, rows) => {
   const a = document.createElement("a");
   a.href = url; a.download = filename; a.click();
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
+};
+
+const generatePDF = (calcName, fields, values, stats, amortParams) => {
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    const W = 210;
+    const PRI = [26, 58, 92];
+    const ACC = [0, 184, 148];
+
+    const addHeader = (title) => {
+      doc.setFillColor(...PRI);
+      doc.rect(0, 0, W, 38, 'F');
+      doc.setFillColor(255,255,255);
+      doc.roundedRect(13, 8, 22, 22, 3, 3, 'F');
+      doc.setTextColor(...PRI);
+      doc.setFontSize(10);
+      doc.setFont('helvetica','bold');
+      doc.text('LM', 24, 21, {align:'center'});
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(15);
+      doc.text('LoanMapping', 40, 17);
+      doc.setFontSize(9);
+      doc.setFont('helvetica','normal');
+      doc.text('Financial Calculator Report', 40, 24);
+      doc.setFontSize(10);
+      doc.setFont('helvetica','bold');
+      doc.text(title, 13, 33);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      doc.text(new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}), W-13, 33, {align:'right'});
+    };
+
+    addHeader(calcName);
+    let y = 50;
+
+    doc.setTextColor(...PRI);
+    doc.setFontSize(10);
+    doc.setFont('helvetica','bold');
+    doc.text('INPUT PARAMETERS', 13, y);
+    y += 3;
+    doc.setDrawColor(...PRI);
+    doc.setLineWidth(0.4);
+    doc.line(13, y, W-13, y);
+    y += 8;
+
+    fields.forEach(f => {
+      const val = values[f.id];
+      const display = `${f.pre||''}${Number(val).toLocaleString()}${f.suf||''}`;
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100,100,100);
+      doc.text(f.label, 18, y);
+      doc.setFont('helvetica','bold');
+      doc.setTextColor(26,26,46);
+      doc.text(display, W-18, y, {align:'right'});
+      y += 8;
+    });
+
+    y += 4;
+    doc.setTextColor(...PRI);
+    doc.setFontSize(10);
+    doc.setFont('helvetica','bold');
+    doc.text('RESULTS SUMMARY', 13, y);
+    y += 3;
+    doc.line(13, y, W-13, y);
+    y += 8;
+
+    stats.forEach(s => {
+      if(s.hi){
+        doc.setFillColor(...PRI);
+        doc.roundedRect(13, y-5, W-26, 13, 2, 2, 'F');
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(9);
+        doc.setFont('helvetica','normal');
+        doc.text(s.label, 18, y+2);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(13);
+        doc.text(s.value, W-18, y+3, {align:'right'});
+        y += 18;
+      } else {
+        doc.setFillColor(240,242,248);
+        doc.roundedRect(13, y-5, W-26, 11, 1, 1, 'F');
+        doc.setTextColor(100,100,100);
+        doc.setFontSize(9);
+        doc.setFont('helvetica','normal');
+        doc.text(s.label, 18, y+1);
+        doc.setFont('helvetica','bold');
+        doc.setTextColor(26,26,46);
+        doc.text(s.value, W-18, y+1, {align:'right'});
+        y += 14;
+      }
+    });
+
+    y += 6;
+    doc.setFontSize(8);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(170,170,170);
+    doc.text('Results are estimates for informational purposes only. Not financial advice.', 13, y);
+
+    const addFooter = () => {
+      const pages = doc.internal.getNumberOfPages();
+      for(let i=1; i<=pages; i++){
+        doc.setPage(i);
+        doc.setFillColor(245,246,250);
+        doc.rect(0, 285, W, 12, 'F');
+        doc.setTextColor(170,170,170);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica','normal');
+        doc.text('LoanMapping.com · Free financial calculators · For informational purposes only · Not financial advice', W/2, 292, {align:'center'});
+        doc.text(`Page ${i} of ${pages}`, W-13, 292, {align:'right'});
+      }
+    };
+
+    if(amortParams){
+      doc.addPage();
+      addHeader(`${calcName} — Amortization Schedule`);
+      const amortRows = buildAmort(amortParams.principal, amortParams.rate, amortParams.months);
+      const yearRows = groupAmortByYear(amortRows);
+      doc.autoTable({
+        startY: 46,
+        head:[['Year','Total Paid','Principal','Interest','Balance']],
+        body: yearRows.map(r=>[`Year ${r.year}`,$$2(r.payment),$$2(r.principal),$$2(r.interest),$$2(r.balance)]),
+        styles:{fontSize:8.5, cellPadding:3, halign:'right'},
+        headStyles:{fillColor:PRI, textColor:[255,255,255], fontStyle:'bold', halign:'right'},
+        columnStyles:{0:{halign:'left', fontStyle:'bold', textColor:PRI}},
+        alternateRowStyles:{fillColor:[248,249,255]},
+        margin:{left:13, right:13},
+      });
+    }
+
+    addFooter();
+    doc.save(`${calcName.toLowerCase().replace(/ /g,'-')}-loanmapping-report.pdf`);
+  } catch(e) {
+    console.error('PDF error:', e);
+    alert('PDF generation failed. Please try again.');
+  }
 };
 
 const buildAmort = (principal, annualRate, months) => {
@@ -422,6 +561,70 @@ const getCalcFromURL = () => {
 /* ══════════════════════════════════════
    SHARED COMPONENTS
 ══════════════════════════════════════ */
+const EmailGateModal = ({calcName, onConfirm, onClose}) => {
+  const [email, setEmail] = useState('');
+  const [agreed, setAgreed] = useState(false);
+  const [sending, setSending] = useState(false);
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && agreed;
+
+  const handleConfirm = async () => {
+    if(!valid) return;
+    setSending(true);
+    try {
+      await fetch('/api/email-capture', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:email.trim(), calcName}),
+      });
+    } catch(e) {}
+    onConfirm(email.trim());
+  };
+
+  return(
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+      <div style={{background:'#fff',borderRadius:16,padding:28,maxWidth:400,width:'100%',boxShadow:'0 24px 64px rgba(0,0,0,0.25)'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <div style={{width:42,height:42,borderRadius:10,background:SITE.primary,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <i className="ti ti-file-text" style={{color:'#fff',fontSize:20}}/>
+            </div>
+            <div>
+              <div style={{fontSize:15,fontWeight:500,color:'#1a1a2e'}}>Free PDF Report</div>
+              <div style={{fontSize:12,color:'#aaa'}}>{calcName} · Branded · Printable</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,color:'#bbb',cursor:'pointer',lineHeight:1,padding:0}}>×</button>
+        </div>
+
+        <div style={{background:'#f0f2f8',borderRadius:10,padding:'10px 14px',marginBottom:16,fontSize:12,color:'#555',lineHeight:1.6}}>
+          Your report includes: input summary · results · amortization schedule (if applicable) · LoanMapping branding
+        </div>
+
+        <label style={{display:'block',fontSize:13,fontWeight:500,color:'#555',marginBottom:5}}>Your email address</label>
+        <input type="email" placeholder="you@example.com" value={email}
+          onChange={e=>setEmail(e.target.value)}
+          onKeyDown={e=>e.key==='Enter'&&valid&&handleConfirm()}
+          style={{marginBottom:12}}/>
+
+        <div style={{display:'flex',alignItems:'flex-start',gap:8,marginBottom:18}}>
+          <input type="checkbox" id="pdf-agree" checked={agreed} onChange={e=>setAgreed(e.target.checked)} style={{marginTop:2,cursor:'pointer'}}/>
+          <label htmlFor="pdf-agree" style={{fontSize:12,color:'#888',cursor:'pointer',lineHeight:1.5}}>
+            I agree to receive occasional financial tips from LoanMapping. Unsubscribe anytime.
+          </label>
+        </div>
+
+        <button onClick={handleConfirm} disabled={!valid||sending}
+          style={{width:'100%',background:valid&&!sending?SITE.primary:'#ccc',color:'#fff',border:'none',borderRadius:8,padding:'11px 20px',fontSize:14,fontWeight:500,cursor:valid&&!sending?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+          {sending
+            ? <><i className="ti ti-loader-2" style={{animation:'spin 1s linear infinite'}}/>Preparing...</>
+            : <><i className="ti ti-download"/>Download Free PDF</>}
+        </button>
+        <p style={{fontSize:11,color:'#bbb',textAlign:'center',marginTop:10,marginBottom:0}}>Free forever · No credit card · No spam</p>
+      </div>
+    </div>
+  );
+};
+
 const AdBox = () => (
   <div className="no-print" style={{border:"1px dashed #c0c8d8",borderRadius:8,padding:"8px 16px",fontSize:11,color:"#aaa",textAlign:"center",marginBottom:14}}>
     <i className="ti ti-ad" style={{fontSize:13,marginRight:4}}/> Advertisement · Google AdSense
@@ -555,7 +758,9 @@ const AmortizationTable = ({params, calcName}) => {
 /* ══════════════════════════════════════
    EXPORT BAR
 ══════════════════════════════════════ */
-const ExportBar = ({calcName, stats, amortParams}) => {
+const ExportBar = ({calcName, stats, amortParams, fields, values}) => {
+  const [showPDFModal, setShowPDFModal] = useState(false);
+
   const exportCSV = () => {
     const rows = [
       ["Calculator",calcName],
@@ -572,17 +777,35 @@ const ExportBar = ({calcName, stats, amortParams}) => {
     downloadCSV(`${calcName.toLowerCase().replace(/ /g,"-")}-results.csv`, rows);
   };
 
+  const handlePDFConfirm = (email) => {
+    setShowPDFModal(false);
+    generatePDF(calcName, fields, values, stats, amortParams);
+  };
+
   return(
-    <div className="no-print" style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
-      <button onClick={exportCSV}
-        style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,fontWeight:500,color:"#555"}}>
-        <i className="ti ti-table-export" style={{fontSize:14}}/>Export CSV
-      </button>
-      <button onClick={()=>window.print()}
-        style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,fontWeight:500,color:"#555"}}>
-        <i className="ti ti-printer" style={{fontSize:14}}/>Print
-      </button>
-    </div>
+    <>
+      {showPDFModal && (
+        <EmailGateModal
+          calcName={calcName}
+          onConfirm={handlePDFConfirm}
+          onClose={()=>setShowPDFModal(false)}
+        />
+      )}
+      <div className="no-print" style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
+        <button onClick={()=>setShowPDFModal(true)}
+          style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:`1.5px solid ${SITE.primary}`,background:SITE.primary,fontSize:12,fontWeight:500,color:"#fff"}}>
+          <i className="ti ti-file-text" style={{fontSize:14}}/>Free PDF Report
+        </button>
+        <button onClick={exportCSV}
+          style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,fontWeight:500,color:"#555"}}>
+          <i className="ti ti-table-export" style={{fontSize:14}}/>Export CSV
+        </button>
+        <button onClick={()=>window.print()}
+          style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid #d0d5e0",background:"#fff",fontSize:12,fontWeight:500,color:"#555"}}>
+          <i className="ti ti-printer" style={{fontSize:14}}/>Print
+        </button>
+      </div>
+    </>
   );
 };
 
@@ -883,7 +1106,7 @@ const HomePage = () => {
                   <Chart chart={result.chart}/>
                 </div>
               )}
-              {result&&<ExportBar calcName={calc.name} stats={result.stats} amortParams={result.amortParams}/>}
+              {result&&<ExportBar calcName={calc.name} stats={result.stats} amortParams={result.amortParams} fields={calc.fields} values={values}/>}
             </div>
           </div>
 

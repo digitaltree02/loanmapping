@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -75,6 +77,30 @@ app.post('/api/contact', async (req, res) => {
   } catch (error) {
     console.error('Contact error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.post('/api/email-capture', (req, res) => {
+  try {
+    const { email, calcName } = req.body;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 100) {
+      return res.status(400).json({ success: false });
+    }
+    const leadsFile = path.join(__dirname, 'leads.json');
+    let leads = [];
+    try {
+      if (fs.existsSync(leadsFile)) {
+        leads = JSON.parse(fs.readFileSync(leadsFile, 'utf8'));
+      }
+    } catch(e) {}
+    const entry = { email: email.trim(), calcName: calcName || 'unknown', date: new Date().toISOString() };
+    leads.push(entry);
+    fs.writeFileSync(leadsFile, JSON.stringify(leads, null, 2));
+    console.log(`New lead: ${entry.email} via ${entry.calcName}`);
+    res.json({ success: true });
+  } catch(e) {
+    console.error('Email capture error:', e);
+    res.status(500).json({ success: false });
   }
 });
 
