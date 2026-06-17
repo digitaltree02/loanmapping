@@ -241,9 +241,9 @@ const CALCULATORS = [
     id:"loan", name:"Loan Payoff", icon:"ti-credit-card", hasAmort:true,
     desc:"Find out your monthly payment and how much interest you'll pay over the life of any loan.",
     fields:[
-      {id:"amount",label:"Loan Amount",  pre:"$", min:500,  max:500000,step:500, def:15000},
-      {id:"rate",  label:"Interest Rate",suf:"%", min:0.5,  max:25,    step:0.5, def:6.5},
-      {id:"term",  label:"Term",         suf:" mo",min:6,   max:360,   step:6,   def:48},
+      {id:"amount",label:"Loan Amount",  pre:"$", min:500,  max:5000000,step:1000, def:15000},
+      {id:"rate",  label:"Interest Rate",suf:"%", min:0.5,  max:36,    step:0.5, def:6.5},
+      {id:"term",  label:"Term",         suf:" mo",min:6,   max:480,   step:6,   def:48},
     ],
     calc:({amount,rate,term})=>{
       const r=rate/100/12,pmt=r?(amount*r*(1+r)**term)/((1+r)**term-1):amount/term,total=pmt*term,interest=total-amount;
@@ -258,10 +258,10 @@ const CALCULATORS = [
     id:"compound", name:"Compound Interest", icon:"ti-trending-up",
     desc:"See how your savings snowball over time — the earlier you start, the more you earn.",
     fields:[
-      {id:"principal",label:"Initial Deposit", pre:"$",min:100,max:100000,step:100,def:5000},
-      {id:"rate",     label:"Annual Rate",      suf:"%",min:1,  max:20,   step:0.5,def:7},
-      {id:"years",    label:"Years",            suf:" yr",min:1,max:40,   step:1,  def:10},
-      {id:"monthly",  label:"Monthly Addition", pre:"$",min:0,  max:5000, step:50, def:200},
+      {id:"principal",label:"Initial Deposit", pre:"$",min:100,max:1000000,step:500, def:5000},
+      {id:"rate",     label:"Annual Rate",      suf:"%",min:1,  max:50,   step:0.5,def:7},
+      {id:"years",    label:"Years",            suf:" yr",min:1,max:50,   step:1,  def:10},
+      {id:"monthly",  label:"Monthly Addition", pre:"$",min:0,  max:25000,step:100,def:200},
     ],
     calc:({principal,rate,years,monthly})=>{
       const r=rate/100/12,fv=n=>principal*(1+r)**n+(r?monthly*((1+r)**n-1)/r:monthly*n);
@@ -276,10 +276,10 @@ const CALCULATORS = [
     id:"mortgage", name:"Mortgage", icon:"ti-home", hasAmort:true,
     desc:"Calculate your monthly mortgage payment and see the full cost of buying a home.",
     fields:[
-      {id:"price",label:"Home Price",   pre:"$",min:50000,max:2000000,step:5000,def:400000},
-      {id:"down", label:"Down Payment", suf:"%",min:3,    max:50,     step:1,   def:20},
-      {id:"rate", label:"Interest Rate",suf:"%",min:1,    max:15,     step:0.1, def:6.8},
-      {id:"years",label:"Term",         suf:" yr",min:5,  max:30,     step:5,   def:30},
+      {id:"price",label:"Home Price",   pre:"$",min:50000,max:10000000,step:10000,def:400000},
+      {id:"down", label:"Down Payment", suf:"%",min:3,    max:60,      step:1,   def:20},
+      {id:"rate", label:"Interest Rate",suf:"%",min:1,    max:20,      step:0.1, def:6.8},
+      {id:"years",label:"Term",         suf:" yr",min:5,  max:40,      step:5,   def:30},
     ],
     calc:({price,down,rate,years})=>{
       const p=price*(1-down/100),r=rate/100/12,n=years*12,pmt=r?(p*r*(1+r)**n)/((1+r)**n-1):p/n,total=pmt*n;
@@ -293,7 +293,7 @@ const CALCULATORS = [
   {
     id:"budget", name:"Budget Planner", icon:"ti-wallet",
     desc:"Split your income using the 50/30/20 rule — needs, wants, and savings made simple.",
-    fields:[{id:"income",label:"Monthly Income",pre:"$",min:1000,max:50000,step:250,def:5000}],
+    fields:[{id:"income",label:"Monthly Income",pre:"$",min:1000,max:500000,step:1000,def:5000}],
     calc:({income})=>({
       stats:[{label:"Needs (50%)",value:$$(income*.5),hi:true},{label:"Wants (30%)",value:$$(income*.3)},{label:"Savings (20%)",value:$$(income*.2)}],
       chart:{type:"pie",data:[{name:"Needs",value:Math.round(income*.5)},{name:"Wants",value:Math.round(income*.3)},{name:"Savings",value:Math.round(income*.2)}],colors:[SITE.primary,SITE.accent,"#e17055"]},
@@ -303,10 +303,10 @@ const CALCULATORS = [
     id:"debt", name:"Debt Snowball", icon:"ti-coin",
     desc:"Pay off multiple debts faster by rolling payments — see exactly when you'll be debt-free.",
     fields:[
-      {id:"debt1",  label:"Debt 1 Balance",pre:"$",min:0,  max:50000,step:100,def:5000},
-      {id:"debt2",  label:"Debt 2 Balance",pre:"$",min:0,  max:50000,step:100,def:8000},
-      {id:"payment",label:"Monthly Budget",pre:"$",min:100,max:10000,step:50, def:600},
-      {id:"rate",   label:"Avg Rate",      suf:"%",min:1,  max:30,   step:0.5,def:18},
+      {id:"debt1",  label:"Debt 1 Balance",pre:"$",min:0,  max:250000,step:500, def:5000},
+      {id:"debt2",  label:"Debt 2 Balance",pre:"$",min:0,  max:250000,step:500, def:8000},
+      {id:"payment",label:"Monthly Budget",pre:"$",min:100,max:50000, step:100, def:600},
+      {id:"rate",   label:"Avg Rate",      suf:"%",min:1,  max:36,   step:0.5,def:18},
     ],
     calc:({debt1,debt2,payment,rate})=>{
       const total=+debt1+ +debt2,r=rate/100/12,pmt=Math.max(payment,total*r*1.02);
