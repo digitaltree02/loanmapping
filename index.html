@@ -525,6 +525,29 @@ const SEO_CONTENT = {
   },
 };
 
+// Head as served by the server for the URL the visitor landed on.
+// Captured before any client-side rewrite so it can be restored when
+// navigating back to a non-calculator URL (e.g. the homepage).
+const INITIAL_META = {
+  title: document.title,
+  metaDesc: document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+  canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href') || 'https://www.loanmapping.com/',
+};
+
+const getSlugFromURL = () => window.location.pathname.replace(/^\/+|\/+$/g, '');
+const urlIsCalcPage = () => Object.prototype.hasOwnProperty.call(SLUG_TO_ID, getSlugFromURL());
+
+const restoreInitialMeta = () => {
+  document.title = INITIAL_META.title;
+  document.querySelector('meta[name="description"]')?.setAttribute('content', INITIAL_META.metaDesc);
+  document.querySelector('meta[property="og:title"]')?.setAttribute('content', INITIAL_META.title);
+  document.querySelector('meta[property="og:description"]')?.setAttribute('content', INITIAL_META.metaDesc);
+  document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', INITIAL_META.title);
+  document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', INITIAL_META.metaDesc);
+  document.querySelector('link[rel="canonical"]')?.setAttribute('href', INITIAL_META.canonical);
+  document.getElementById('dyn-schema')?.remove();
+};
+
 const updatePageMeta = id => {
   const c = SEO_CONTENT[id];
   if(!c) return;
@@ -540,10 +563,7 @@ const updatePageMeta = id => {
   el.textContent=JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":c.faqs.map(f=>({"@type":"Question","name":f.q,"acceptedAnswer":{"@type":"Answer","text":f.a}}))});
 };
 
-const getCalcFromURL = () => {
-  const path = window.location.pathname.replace(/^\//, '');
-  return SLUG_TO_ID[path] || CALCULATORS[0].id;
-};
+const getCalcFromURL = () => SLUG_TO_ID[getSlugFromURL()] || CALCULATORS[0].id;
 
 /* ══════════════════════════════════════
    SHARED COMPONENTS
@@ -854,7 +874,10 @@ const HomePage = () => {
   const calc=CALCULATORS.find(c=>c.id===activeId);
 
   useEffect(()=>{
-    updatePageMeta(activeId);
+    // Only rewrite head metadata when the URL is actually a calculator page.
+    // On "/" (or any unknown path) the server-rendered canonical/title must
+    // stand — rewriting it made Google see the wrong canonical on the homepage.
+    if(urlIsCalcPage()) updatePageMeta(activeId);
     const handlePop=()=>{
       const id=getCalcFromURL();
       const c=CALCULATORS.find(x=>x.id===id)||CALCULATORS[0];
@@ -863,7 +886,7 @@ const HomePage = () => {
       setValuesB(getDefaults(c));
       setShowAmort(false);
       setCompareMode(false);
-      updatePageMeta(id);
+      if(urlIsCalcPage()) updatePageMeta(id); else restoreInitialMeta();
     };
     window.addEventListener('popstate',handlePop);
     return()=>window.removeEventListener('popstate',handlePop);
