@@ -30,6 +30,11 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a3a5c'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='14' font-weight='bold' fill='white' text-anchor='middle'%3ELM%3C/text%3E%3C/svg%3E"/>
 <link rel="canonical" href="%%CANONICAL%%"/>
 %%PAGE_SCHEMA%%
+<!-- Injected by the server. Public by design: Web3Forms' free tier only
+     accepts submissions from the browser, and their access keys are meant to
+     live in client-side HTML. Abuse is limited by the allowed-domain setting
+     in the Web3Forms dashboard, not by hiding this. -->
+<script>window.W3F_KEY="%%WEB3FORMS_KEY%%";</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -577,14 +582,41 @@ const EmailGateModal = ({calcName, onConfirm, onClose}) => {
   const handleConfirm = async () => {
     if(!valid) return;
     setSending(true);
+    const addr = email.trim();
+
+    // Alert email goes browser -> Web3Forms directly; the free tier rejects
+    // server-side sends. Not awaited, so a mail failure never blocks the PDF.
+    // Guarded per session because exporting several PDFs in one visit should
+    // not spend several of the 250 monthly sends on the same person.
+    const seenKey=`lm_notified_${calcName}_${addr}`;
+    let alreadySent=false;
+    try{ alreadySent=sessionStorage.getItem(seenKey)==='1'; }catch(_){}
+
+    if(!alreadySent){
+      try{ sessionStorage.setItem(seenKey,'1'); }catch(_){}
+      fetch('https://api.web3forms.com/submit', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          access_key:window.W3F_KEY,
+          subject:`New LoanMapping lead — ${calcName}`,
+          name:'LoanMapping lead capture',
+          email:addr,
+          message:`New lead captured on LoanMapping.\n\nEmail:  ${addr}\nSource: ${calcName}\nWhen:   ${new Date().toISOString()}`,
+        }),
+      }).then(r=>r.json()).then(d=>{
+        if(!d||!d.success){ try{ sessionStorage.removeItem(seenKey); }catch(_){} }
+      }).catch(()=>{ try{ sessionStorage.removeItem(seenKey); }catch(_){} });
+    }
+
     try {
       await fetch('/api/email-capture', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email:email.trim(), calcName}),
+        body:JSON.stringify({email:addr, calcName}),
       });
     } catch(e) {}
-    onConfirm(email.trim());
+    onConfirm(addr);
   };
 
   return(
@@ -1187,10 +1219,19 @@ const ContactPage = () => {
     if(!ok)return;
     setStatus("sending");
     try{
-      const res=await fetch("/api/contact",{
+      // Posted straight to Web3Forms. Routing this through our server used to
+      // fail with "Mail service unavailable" — their free tier refuses
+      // server-side submissions, so every message was being lost.
+      const res=await fetch("https://api.web3forms.com/submit",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({name:form.name,email:form.email,message:form.message}),
+        body:JSON.stringify({
+          access_key:window.W3F_KEY,
+          subject:`New message from ${form.name.trim()} via LoanMapping`,
+          name:form.name.trim(),
+          email:form.email.trim(),
+          message:form.message.trim(),
+        }),
       });
       const data=await res.json();
       setStatus(data.success?"success":"error");

@@ -7,8 +7,19 @@ const port = process.env.PORT || 3000;
 
 const BASE_URL = 'https://www.loanmapping.com';
 
-// Web3Forms relays both the contact form and the lead notifications below.
-// The free tier is 250 emails/month shared across both — see notifyLead.
+// Web3Forms relays the contact form and the lead notifications.
+//
+// These calls MUST be made from the browser, not from here. Web3Forms' free
+// tier rejects server-side submissions outright ("Pro plan is required") and
+// sits behind Cloudflare bot protection, which answers Node's fetch with a
+// challenge page instead of the API. Sending a browser User-Agent from the
+// server defeats both, but that evades a paid-plan gate and would break again
+// the moment they tighten detection — so the key is injected into the pages
+// and the browser submits directly, which is the free tier's intended use.
+//
+// The key is public by design (Web3Forms embeds it in client-side HTML) and is
+// already committed to this repo. Restrict it to loanmapping.com in the
+// Web3Forms dashboard — that, not secrecy, is what limits abuse.
 const WEB3FORMS_KEY = process.env.WEB3FORMS_KEY || 'bf64248e-5198-4b4f-b937-807f5746615d';
 
 // Load template once at startup; placeholders are replaced per request.
@@ -244,7 +255,8 @@ function renderPage(route) {
     .replace(/%%OG_DESC%%/g,     data.desc)
     .replace(/%%CANONICAL%%/g,   data.canonical)
     .replace('%%PAGE_SCHEMA%%',  `<script type="application/ld+json">${data.schema}</script>`)
-    .replace('%%SSR_HTML%%',     data.ssr);
+    .replace('%%SSR_HTML%%',     data.ssr)
+    .replace(/%%WEB3FORMS_KEY%%/g, WEB3FORMS_KEY);
 }
 
 app.use(express.json({ limit: '1mb' }));
@@ -406,6 +418,7 @@ button[disabled]{opacity:.55;cursor:default}
       <ul>${bullets}</ul>
       <form id="f" novalidate>
         <input type="email" id="e" name="email" placeholder="you@example.com" autocomplete="email" required aria-label="Email address"/>
+        <input type="checkbox" name="botcheck" id="bot" style="display:none" tabindex="-1" autocomplete="off"/>
         <button type="submit" id="b">${escapeHtml(offer.cta)}</button>
       </form>
       <p class="err" id="err"></p>
@@ -437,6 +450,39 @@ button[disabled]{opacity:.55;cursor:default}
       err.style.display='block';e.focus();return;
     }
     err.style.display='none';b.disabled=true;b.textContent='One moment…';
+
+    // The alert email must go straight from the browser to Web3Forms — their
+    // free tier rejects server-side calls. Fired alongside the local record,
+    // and never awaited: a mail failure must not cost us the lead.
+    //
+    // Only 250 sends a month, so a refresh-and-resubmit of the same address
+    // must not spend another one. sessionStorage is the right scope: it stops
+    // repeats within a visit without permanently suppressing a genuine
+    // returning lead.
+    var seenKey='lm_notified_'+${JSON.stringify(offer.calcName)}+'_'+v;
+    var alreadySent=false;
+    try{ alreadySent=sessionStorage.getItem(seenKey)==='1'; }catch(_){}
+
+    if(!document.getElementById('bot').checked && !alreadySent){
+      try{ sessionStorage.setItem(seenKey,'1'); }catch(_){}
+      fetch('https://api.web3forms.com/submit',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          access_key:${JSON.stringify(WEB3FORMS_KEY)},
+          subject:'New LoanMapping lead — '+${JSON.stringify(offer.calcName)},
+          name:'LoanMapping lead capture',
+          email:v,
+          message:'New lead captured on LoanMapping.\\n\\nEmail:  '+v
+                 +'\\nSource: '+${JSON.stringify(offer.calcName)}
+                 +'\\nWhen:   '+new Date().toISOString()
+        })
+      }).then(function(r){return r.json()}).then(function(d){
+        // Clear the guard on failure so the next attempt can retry.
+        if(!d||!d.success){ try{ sessionStorage.removeItem(seenKey); }catch(_){} }
+      }).catch(function(){ try{ sessionStorage.removeItem(seenKey); }catch(_){} });
+    }
+
     fetch('/api/email-capture',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -469,112 +515,17 @@ app.get('/offer/:variant', (req, res, next) => {
   res.type('html').send(renderOffer(offer));
 });
 
-app.post('/api/contact', async (req, res) => {
-  try {
-    const { name, email, message } = req.body;
+// /api/contact is gone. It proxied the contact form to Web3Forms from the
+// server, which their free tier refuses, so every message sent through the
+// site came back "Mail service unavailable" and was silently lost. The form
+// now posts to Web3Forms directly from the browser.
 
-    if (!name || !email || !message) {
-      return res.status(400).json({ success: false, message: 'All fields required' });
-    }
-
-    if (typeof name !== 'string' || name.trim().length === 0 || name.length > 100) {
-      return res.status(400).json({ success: false, message: 'Invalid name' });
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 100) {
-      return res.status(400).json({ success: false, message: 'Invalid email' });
-    }
-
-    if (typeof message !== 'string' || message.trim().length === 0 || message.length > 5000) {
-      return res.status(400).json({ success: false, message: 'Invalid message' });
-    }
-
-    const response = await fetch('https://api.web3forms.com/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        access_key: WEB3FORMS_KEY,
-        name: name.trim(),
-        email: email.trim(),
-        message: message.trim(),
-        subject: `New message from ${name.trim()} via LoanMapping`,
-      }),
-    });
-
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      console.error('Web3Forms returned non-JSON response, status:', response.status);
-      return res.status(502).json({ success: false, message: 'Mail service unavailable' });
-    }
-
-    const data = await response.json();
-
-    if (data.success) {
-      res.json({ success: true });
-    } else {
-      console.error('Web3Forms error:', data);
-      res.status(400).json({ success: false, message: data.message || 'Failed to send' });
-    }
-  } catch (error) {
-    console.error('Contact error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// leads.json is written to the container filesystem, which Railway wipes on
-// every deploy. It is a convenience cache, not the record — this email is the
-// durable copy of the lead.
+// Records the lead locally. The alert email is sent by the browser directly to
+// Web3Forms (see WEB3FORMS_KEY above for why it cannot be sent from here), so
+// this endpoint is the secondary copy, not the notification path.
 //
-// Sends are fire-and-forget: the visitor's confirmation must never wait on the
-// mail service, and a failed send must never cost us the lead.
-//
-// Web3Forms' free tier is 250 emails/month shared with the contact form, so a
-// repeat submission of the same address from the same source is not re-sent.
-// The cache is in-process and resets on deploy, which is all it needs to do —
-// it exists to absorb refreshes and double-clicks, not to dedupe forever.
-const notifiedLeads = new Set();
-
-async function notifyLead(entry) {
-  const dedupeKey = `${entry.email}|${entry.calcName}`;
-  if (notifiedLeads.has(dedupeKey)) {
-    console.log(`Lead already notified, not re-sending: ${entry.email}`);
-    return;
-  }
-  // Bound the cache so a long-lived process cannot grow it without limit.
-  if (notifiedLeads.size >= 5000) notifiedLeads.clear();
-  notifiedLeads.add(dedupeKey);
-
-  try {
-    const response = await fetch('https://api.web3forms.com/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        access_key: WEB3FORMS_KEY,
-        subject: `New LoanMapping lead — ${entry.calcName}`,
-        name: 'LoanMapping lead capture',
-        // Reply-to becomes the lead's address, so you can answer directly.
-        email: entry.email,
-        message: `New lead captured on LoanMapping.\n\n`
-               + `Email:  ${entry.email}\n`
-               + `Source: ${entry.calcName}\n`
-               + `When:   ${entry.date}`,
-      }),
-    });
-
-    const data = await response.json().catch(() => null);
-    if (!data || !data.success) {
-      // Most likely cause is the 250/month free-tier cap being reached.
-      console.error('Lead notification failed:', response.status, data);
-      notifiedLeads.delete(dedupeKey); // let the next submit retry
-    } else {
-      console.log(`Lead notification sent: ${entry.email}`);
-    }
-  } catch (err) {
-    console.error('Lead notification error:', err.message);
-    notifiedLeads.delete(dedupeKey);
-  }
-}
-
+// leads.json lives on the container filesystem, which Railway wipes on every
+// deploy, so treat it as a short-lived cache rather than a durable store.
 app.post('/api/email-capture', (req, res) => {
   const { email, calcName } = req.body || {};
 
@@ -605,9 +556,6 @@ app.post('/api/email-capture', (req, res) => {
 
   console.log(`New lead: ${entry.email} via ${entry.calcName}`);
   res.json({ success: true });
-
-  // Deliberately after the response — the visitor is already on their way.
-  notifyLead(entry);
 });
 
 // Unknown paths used to fall through to Express's default handler, which
