@@ -245,13 +245,46 @@ function renderPage(route) {
 
 app.use(express.json({ limit: '1mb' }));
 
+// Railway terminates TLS upstream, so req.protocol must come from the
+// X-Forwarded-Proto header rather than the (always http) socket.
+app.set('trust proxy', true);
+
+// Canonical host is https://www.loanmapping.com. The edge proxy already
+// redirects http→https and apex→www, but it drops the path while doing it
+// (loanmapping.com/loan-calculator landed on the homepage). This middleware
+// is the in-app safety net and preserves path + query string.
+//
+// Only hostnames we own are redirected. Railway's healthcheck and localhost
+// hit this app under a different Host and must keep getting a 200, otherwise
+// the healthcheck fails and the deploy never goes live.
+const OWNED_HOSTS = new Set(['loanmapping.com', 'www.loanmapping.com']);
+
+app.use((req, res, next) => {
+  const host = (req.headers.host || '').split(':')[0].toLowerCase();
+  if (!OWNED_HOSTS.has(host)) return next();
+
+  if (host === 'www.loanmapping.com' && req.protocol === 'https') return next();
+
+  return res.redirect(301, BASE_URL + req.originalUrl);
+});
+
 // Explicitly serve only the static files that should be public.
 // This avoids exposing server.js, package.json, leads.json, etc.
-['robots.txt', 'ads.txt', 'sitemap.xml'].forEach(file => {
-  const contentType = file.endsWith('.xml') ? 'application/xml' : 'text/plain';
+const STATIC_TYPES = { '.xml': 'application/xml', '.png': 'image/png', '.txt': 'text/plain' };
+
+['robots.txt', 'ads.txt', 'sitemap.xml', 'og-image.png'].forEach(file => {
+  const contentType = STATIC_TYPES[path.extname(file)] || 'text/plain';
   app.get('/' + file, (_req, res) => {
     res.type(contentType).sendFile(path.join(__dirname, file));
   });
+});
+
+// Bare /favicon.ico requests (browsers and crawlers ask for it unprompted)
+// were 404ing. Serve the same mark the pages use inline.
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1a3a5c"/><text x="16" y="22" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">LM</text></svg>`;
+
+app.get('/favicon.ico', (_req, res) => {
+  res.type('image/svg+xml').set('Cache-Control', 'public, max-age=604800').send(FAVICON_SVG);
 });
 
 // HTML routes — each serves a server-rendered page.
@@ -343,6 +376,63 @@ app.post('/api/email-capture', (req, res) => {
     console.error('Email capture error:', e);
     res.status(500).json({ success: false });
   }
+});
+
+// Unknown paths used to fall through to Express's default handler, which
+// returned an unstyled `Cannot GET /whatever` page titled "Error". Google
+// crawled those. This returns the same 404 status with a page that matches
+// the site and routes visitors to a real calculator.
+function render404() {
+  const links = NAV_LINKS
+    .map(l => `<li><a href="${l.href}">${l.label}</a></li>`)
+    .join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Page Not Found | LoanMapping</title>
+<meta name="description" content="That page does not exist. Browse LoanMapping's free loan, mortgage, compound interest, budget and debt payoff calculators."/>
+<meta name="robots" content="noindex,follow"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.ico"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6fa;color:#1a1a2e;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e0e4ef;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.brand{font-size:20px;font-weight:600;color:#1a3a5c;text-decoration:none}
+.top nav{display:flex;gap:4px;flex-wrap:wrap}
+.top nav a{color:#888;text-decoration:none;font-size:12px;padding:5px 10px;border:1px solid #e0e4ef;border-radius:8px}
+.card{background:#fff;border:1px solid #e0e4ef;border-radius:12px;padding:28px 24px;margin-top:8px}
+.code{font-size:13px;font-weight:600;color:#888;letter-spacing:.08em;margin-bottom:8px}
+h1{font-size:22px;font-weight:600;color:#1a3a5c;margin-bottom:12px}
+p{font-size:14px;color:#555;line-height:1.8}
+ul{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+ul a{color:#1a3a5c;font-size:13px;text-decoration:none;border:1px solid #d0d5e0;border-radius:6px;padding:6px 12px;display:inline-block;background:#f8f9ff}
+.home{display:inline-block;margin-top:20px;font-size:13px;color:#1a3a5c;text-decoration:none;font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="/">LoanMapping</a>
+    <nav>${NAV_LINKS.map(l => `<a href="${l.href}">${l.label}</a>`).join('')}</nav>
+  </div>
+  <div class="card">
+    <p class="code">404</p>
+    <h1>That page doesn't exist</h1>
+    <p>The link you followed may be out of date or mistyped. Every LoanMapping calculator is free and needs no signup — pick one below to keep going.</p>
+    <ul>${links}</ul>
+    <a class="home" href="/">← Back to all calculators</a>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+app.use((_req, res) => {
+  res.status(404).type('html').send(render404());
 });
 
 app.listen(port, () => {
