@@ -300,6 +300,171 @@ app.get('/', (_req, res) => res.send(renderPage('/')));
   app.get(route, (_req, res) => res.send(renderPage(route)));
 });
 
+// ── Ad landing pages ────────────────────────────────────────────────────────
+// Paid traffic lands here, not on the organic pages. Kept deliberately light:
+// no React, no CDN bundles, no icon webfont — just inline CSS and ~30 lines of
+// JS, because landing page speed feeds Google Ads quality score.
+//
+// Variants are keyed by URL segment (/offer/v1, /offer/v2, …) so an A/B test
+// is a new entry in this map rather than a new route. Unknown variants fall
+// through to the 404 handler.
+const OFFERS = {
+  v1: {
+    calcName: 'offer-v1',            // tags the lead in leads.json
+    target: '/debt-snowball-calculator',
+    eyebrow: 'Free debt payoff plan',
+    h1: 'See your exact debt-free date',
+    sub: 'Build a personalised payoff schedule and download it as a branded PDF — free, and yours in the next 30 seconds.',
+    bullets: [
+      'Your exact debt-free date, month and year',
+      'A month-by-month payment schedule you can follow',
+      'Total interest you save by paying extra',
+      'A printable PDF to keep or share',
+    ],
+    cta: 'Unlock my free plan',
+    // Honest about what happens next: the plan is built on the following
+    // screen. Nothing is emailed — /api/email-capture only records the lead.
+    reassurance: 'No spam, no signup, no card. Your plan opens on the next screen.',
+  },
+};
+
+function renderOffer(offer) {
+  const bullets = offer.bullets.map(b => `
+        <li>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.6 13.6 4.2 10.2l1.2-1.2 2.2 2.2 6-6L14.8 6z"/></svg>
+          <span>${escapeHtml(b)}</span>
+        </li>`).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>${escapeHtml(offer.eyebrow)} | LoanMapping</title>
+<meta name="description" content="${escapeHtml(offer.sub)}"/>
+<!-- Ad landing variants are near-duplicates of each other and of the
+     calculator pages. Keep them out of the organic index; AdsBot is still
+     allowed to crawl them via robots.txt. -->
+<meta name="robots" content="noindex,follow"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.ico"/>
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18050335116"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-18050335116');
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6fa;color:#1a1a2e;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e0e4ef;margin-bottom:20px;flex-wrap:wrap;gap:8px}
+.brand{font-size:20px;font-weight:600;color:#1a3a5c;text-decoration:none}
+.top nav{display:flex;gap:4px;flex-wrap:wrap}
+.top nav a{color:#888;text-decoration:none;font-size:12px;padding:5px 10px;border:1px solid #e0e4ef;border-radius:8px}
+.card{background:#fff;border:1px solid #e0e4ef;border-radius:12px;padding:30px 26px}
+.eyebrow{display:inline-block;font-size:12px;font-weight:600;color:#1a3a5c;background:#eef2fb;border-radius:999px;padding:5px 12px;margin-bottom:14px}
+h1{font-size:27px;font-weight:600;color:#1a3a5c;line-height:1.3;margin-bottom:12px}
+.sub{font-size:15px;color:#555;line-height:1.75;margin-bottom:22px}
+ul{list-style:none;margin-bottom:26px}
+li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#444;line-height:1.6;padding:7px 0}
+li svg{width:20px;height:20px;flex:0 0 20px;margin-top:1px;fill:#1a3a5c}
+form{display:flex;gap:8px;flex-wrap:wrap}
+input[type=email]{flex:1 1 240px;padding:12px 14px;border:1.5px solid #d0d5e0;border-radius:8px;font-size:15px;background:#fff;color:#1a1a2e;outline:none;font-family:inherit;transition:border .2s}
+input[type=email]:focus{border-color:#1a3a5c;box-shadow:0 0 0 2px rgba(26,58,92,.08)}
+button{flex:0 0 auto;padding:12px 24px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity .2s}
+button:hover{opacity:.9}
+button[disabled]{opacity:.55;cursor:default}
+.note{font-size:12px;color:#aaa;margin-top:12px;line-height:1.6}
+.err{font-size:13px;color:#c0392b;margin-top:10px;display:none}
+.done{display:none;text-align:center;padding:8px 0}
+.done h2{font-size:21px;font-weight:600;color:#1a3a5c;margin-bottom:10px}
+.done p{font-size:14px;color:#555;line-height:1.7;margin-bottom:22px}
+.done a{display:inline-block;padding:12px 26px;background:#1a3a5c;color:#fff;border-radius:8px;font-size:15px;font-weight:600;text-decoration:none}
+.tick{width:46px;height:46px;fill:#1a3a5c;margin-bottom:6px}
+.foot{margin-top:18px;padding-top:14px;border-top:1px solid #e0e4ef;text-align:center}
+.foot p{font-size:12px;color:#aaa;line-height:1.7}
+@media(max-width:520px){h1{font-size:23px}.card{padding:24px 18px}button{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="/">LoanMapping</a>
+    <nav>${NAV_LINKS.map(l => `<a href="${l.href}">${l.label}</a>`).join('')}</nav>
+  </div>
+
+  <div class="card">
+    <div id="pitch">
+      <span class="eyebrow">${escapeHtml(offer.eyebrow)}</span>
+      <h1>${escapeHtml(offer.h1)}</h1>
+      <p class="sub">${escapeHtml(offer.sub)}</p>
+      <ul>${bullets}</ul>
+      <form id="f" novalidate>
+        <input type="email" id="e" name="email" placeholder="you@example.com" autocomplete="email" required aria-label="Email address"/>
+        <button type="submit" id="b">${escapeHtml(offer.cta)}</button>
+      </form>
+      <p class="err" id="err"></p>
+      <p class="note">${escapeHtml(offer.reassurance)}</p>
+    </div>
+
+    <div class="done" id="done">
+      <svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.6 13.6 4.2 10.2l1.2-1.2 2.2 2.2 6-6L14.8 6z"/></svg>
+      <h2>You're all set</h2>
+      <p>Enter your balances on the next screen and your payoff plan builds instantly — then hit Export for the PDF.</p>
+      <a href="${offer.target}" id="go">Build my plan &rarr;</a>
+    </div>
+  </div>
+
+  <div class="foot">
+    <p>Results are estimates for informational purposes only and are not financial advice.<br/>LoanMapping is not a lender and does not sell your data.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var f=document.getElementById('f'),e=document.getElementById('e'),
+      b=document.getElementById('b'),err=document.getElementById('err');
+  f.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var v=e.value.trim();
+    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v)||v.length>100){
+      err.textContent='Please enter a valid email address.';
+      err.style.display='block';e.focus();return;
+    }
+    err.style.display='none';b.disabled=true;b.textContent='One moment…';
+    fetch('/api/email-capture',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:v,calcName:${JSON.stringify(offer.calcName)}})
+    }).then(function(r){return r.json()}).then(function(d){
+      if(!d||!d.success) throw new Error('rejected');
+      // TODO: swap for the campaign's real conversion label once created in
+      // Google Ads — gtag('event','conversion',{send_to:'AW-18050335116/LABEL'})
+      if(window.gtag) gtag('event','generate_lead',{event_category:'offer',event_label:${JSON.stringify(offer.calcName)}});
+      document.getElementById('pitch').style.display='none';
+      var done=document.getElementById('done');
+      done.style.display='block';
+      done.scrollIntoView({block:'center',behavior:'smooth'});
+    }).catch(function(){
+      // Never strand paid traffic on a dead form — let them through anyway.
+      b.disabled=false;b.textContent=${JSON.stringify(offer.cta)};
+      err.textContent='That didn\\'t save — you can still continue to your plan.';
+      err.style.display='block';
+    });
+  });
+})();
+</script>
+</body>
+</html>`;
+}
+
+app.get('/offer/:variant', (req, res, next) => {
+  const offer = OFFERS[String(req.params.variant).toLowerCase()];
+  if (!offer) return next();
+  res.type('html').send(renderOffer(offer));
+});
+
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, email, message } = req.body;
