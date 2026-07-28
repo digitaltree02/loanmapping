@@ -7,6 +7,10 @@ const port = process.env.PORT || 3000;
 
 const BASE_URL = 'https://www.loanmapping.com';
 
+// Web3Forms relays both the contact form and the lead notifications below.
+// The free tier is 250 emails/month shared across both — see notifyLead.
+const WEB3FORMS_KEY = process.env.WEB3FORMS_KEY || 'bf64248e-5198-4b4f-b937-807f5746615d';
+
 // Load template once at startup; placeholders are replaced per request.
 const TEMPLATE = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
@@ -485,13 +489,11 @@ app.post('/api/contact', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid message' });
     }
 
-    const apiKey = process.env.WEB3FORMS_KEY || 'bf64248e-5198-4b4f-b937-807f5746615d';
-
     const response = await fetch('https://api.web3forms.com/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        access_key: apiKey,
+        access_key: WEB3FORMS_KEY,
         name: name.trim(),
         email: email.trim(),
         message: message.trim(),
@@ -519,28 +521,93 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-app.post('/api/email-capture', (req, res) => {
+// leads.json is written to the container filesystem, which Railway wipes on
+// every deploy. It is a convenience cache, not the record — this email is the
+// durable copy of the lead.
+//
+// Sends are fire-and-forget: the visitor's confirmation must never wait on the
+// mail service, and a failed send must never cost us the lead.
+//
+// Web3Forms' free tier is 250 emails/month shared with the contact form, so a
+// repeat submission of the same address from the same source is not re-sent.
+// The cache is in-process and resets on deploy, which is all it needs to do —
+// it exists to absorb refreshes and double-clicks, not to dedupe forever.
+const notifiedLeads = new Set();
+
+async function notifyLead(entry) {
+  const dedupeKey = `${entry.email}|${entry.calcName}`;
+  if (notifiedLeads.has(dedupeKey)) {
+    console.log(`Lead already notified, not re-sending: ${entry.email}`);
+    return;
+  }
+  // Bound the cache so a long-lived process cannot grow it without limit.
+  if (notifiedLeads.size >= 5000) notifiedLeads.clear();
+  notifiedLeads.add(dedupeKey);
+
   try {
-    const { email, calcName } = req.body;
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 100) {
-      return res.status(400).json({ success: false });
+    const response = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_KEY,
+        subject: `New LoanMapping lead — ${entry.calcName}`,
+        name: 'LoanMapping lead capture',
+        // Reply-to becomes the lead's address, so you can answer directly.
+        email: entry.email,
+        message: `New lead captured on LoanMapping.\n\n`
+               + `Email:  ${entry.email}\n`
+               + `Source: ${entry.calcName}\n`
+               + `When:   ${entry.date}`,
+      }),
+    });
+
+    const data = await response.json().catch(() => null);
+    if (!data || !data.success) {
+      // Most likely cause is the 250/month free-tier cap being reached.
+      console.error('Lead notification failed:', response.status, data);
+      notifiedLeads.delete(dedupeKey); // let the next submit retry
+    } else {
+      console.log(`Lead notification sent: ${entry.email}`);
     }
+  } catch (err) {
+    console.error('Lead notification error:', err.message);
+    notifiedLeads.delete(dedupeKey);
+  }
+}
+
+app.post('/api/email-capture', (req, res) => {
+  const { email, calcName } = req.body || {};
+
+  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 100) {
+    return res.status(400).json({ success: false });
+  }
+
+  const entry = {
+    email: email.trim(),
+    calcName: String(calcName || 'unknown').slice(0, 60),
+    date: new Date().toISOString(),
+  };
+
+  // Best-effort local copy. A filesystem failure must not cost us the lead,
+  // so nothing in here is allowed to throw past this block.
+  try {
     const leadsFile = path.join(__dirname, 'leads.json');
     let leads = [];
     try {
-      if (fs.existsSync(leadsFile)) {
-        leads = JSON.parse(fs.readFileSync(leadsFile, 'utf8'));
-      }
-    } catch(e) {}
-    const entry = { email: email.trim(), calcName: calcName || 'unknown', date: new Date().toISOString() };
+      if (fs.existsSync(leadsFile)) leads = JSON.parse(fs.readFileSync(leadsFile, 'utf8'));
+    } catch (e) {}
+    if (!Array.isArray(leads)) leads = [];
     leads.push(entry);
     fs.writeFileSync(leadsFile, JSON.stringify(leads, null, 2));
-    console.log(`New lead: ${entry.email} via ${entry.calcName}`);
-    res.json({ success: true });
-  } catch(e) {
-    console.error('Email capture error:', e);
-    res.status(500).json({ success: false });
+  } catch (e) {
+    console.error('Could not write leads.json, continuing:', e.message);
   }
+
+  console.log(`New lead: ${entry.email} via ${entry.calcName}`);
+  res.json({ success: true });
+
+  // Deliberately after the response — the visitor is already on their way.
+  notifyLead(entry);
 });
 
 // Unknown paths used to fall through to Express's default handler, which
